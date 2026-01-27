@@ -1,0 +1,76 @@
+name: Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🚚 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 📂 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, readline
+          coverage: none
+
+      - name: 📦 Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --no-progress --no-interaction
+
+      - name: 📂 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: 📦 Install NPM dependencies and build
+        run: |
+          npm install
+          npm run build
+
+      - name: 🧹 Prepare Folders for Deployment
+        run: |
+          mkdir -p deploy/services
+          mkdir -p deploy/public_html
+          
+          # Copy everything to services folder
+          cp -r . deploy/services/
+          
+          # Move public content to public_html folder
+          mv deploy/services/public/* deploy/public_html/
+          
+          # Use production index.php
+          mv deploy/public_html/index.php.production deploy/public_html/index.php
+          
+          # Cleanup services folder
+          rm -rf deploy/services/public
+          rm -rf deploy/services/node_modules
+          rm -rf deploy/services/tests
+          rm -f deploy/services/.env
+          rm -f deploy/services/.gitignore
+          rm -rf deploy/services/.github
+          rm -rf deploy/services/deploy
+
+      - name: 🚀 Deploy Services to cPanel
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./deploy/services/
+          server-dir: /Services_Aqwam/ERP/
+          state-name: services.json
+
+      - name: 🚀 Deploy Public Assets to cPanel
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./deploy/public_html/
+          server-dir: /public_html/AqwamBiz/ERP/
+          state-name: public.json
