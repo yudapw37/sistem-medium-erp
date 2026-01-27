@@ -92,35 +92,4 @@ php artisan serve
 | Kasir / POS            | ![POS Screenshot](public/media/readme-pos.png)             |
 | Invoice Ready-to-Print | ![Invoice Screenshot](public/media/readme-invoice.png)     |
 
-<sub>_Tidak ada file? Silakan ganti dengan screenshot kamu sendiri di `public/media`._</sub>
-
-## 🧪 Pengujian
-
-```bash
-php artisan test --filter=TransactionFlowTest
-```
-
-Pengujian ini mensimulasikan checkout lengkap: keranjang ➜ transaksi ➜ invoice, termasuk validasi stok, detail transaksi, profit, hitung stok, integrasi Midtrans (HTTP fake), dan render Inertia untuk halaman print.
-
-## 🤝 Kontribusi
-
-1. Fork repo ini
-2. Buat branch fitur: `git checkout -b feature/namamu`
-3. Commit perubahanmu: `git commit -m "Tambah fitur X"`
-4. Push branch: `git push origin feature/namamu`
-5. Buka Pull Request
-
-Ada bug atau ide fitur? Buat issue supaya kita bisa diskusi bareng.
-
-## Authors
-
--   [Arya Dwi Putra](https://www.github.com/aryadwiputra)
--   Aplikasi ini menggunakan resource dari https://github.com/Raf-Taufiqurrahman/RILT-Starter dengan beberapa modifikasi yang saya lakukan terhadap komponen-komponen untuk mendukung aplikasi kasir
-
-## ⭐ Dukung Proyek Ini
-
-Kalau repositori ini membantumu membangun POS lebih cepat, klik **Star**. Dukungan kecil ini bikin proyek tetap aktif dan membantu developer lain menemukannya. Terima kasih! 🙌
-
----
-
-Made with ❤️ menggunakan Laravel + React oleh komunitas Point of Sales.
+<sub>_Tidak ada file? Silakan ganti dengan screenshot kamu sendiri di `public/media`._</sub
