@@ -5,13 +5,28 @@ on:
   push:
     branches:
       - main
+      - staging
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      IS_STAGING: ${{ github.ref == 'refs/heads/staging' }}
     steps:
       - name: 🚚 Checkout code
         uses: actions/checkout@v3
+
+      - name: ⚙️ Set Deployment Variables
+        run: |
+          if [ "${{ env.IS_STAGING }}" == "true" ]; then
+            echo "SERVER_DIR_CORE=/Services_Aqwam/ERP_Staging/" >> $GITHUB_ENV
+            echo "SERVER_DIR_PUBLIC=/public_html/AqwamBiz/ERP_Staging/" >> $GITHUB_ENV
+            echo "ENVIRONMENT_NAME=ERP_Staging" >> $GITHUB_ENV
+          else
+            echo "SERVER_DIR_CORE=/Services_Aqwam/ERP/" >> $GITHUB_ENV
+            echo "SERVER_DIR_PUBLIC=/public_html/AqwamBiz/ERP/" >> $GITHUB_ENV
+            echo "ENVIRONMENT_NAME=ERP" >> $GITHUB_ENV
+          fi
 
       - name: 📂 Setup PHP
         uses: shivammathur/setup-php@v2
@@ -44,7 +59,10 @@ jobs:
           # Move public content to public_html folder
           mv temp_deploy/services/public/* temp_deploy/public_html/
           
-          # Use production index.php
+          # Adjust index.php for the specific environment (ERP vs ERP_Staging)
+          sed -i "s/Services_Aqwam\/ERP/Services_Aqwam\/${{ env.ENVIRONMENT_NAME }}/g" temp_deploy/public_html/index.php.production
+          
+          # Use the prepared production index.php
           mv temp_deploy/public_html/index.php.production temp_deploy/public_html/index.php
           
           # Cleanup services folder
@@ -66,8 +84,8 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./deploy/services/
-          server-dir: /Services_Aqwam/ERP/
-          state-name: services.json
+          server-dir: ${{ env.SERVER_DIR_CORE }}
+          state-name: services-${{ github.ref_name }}.json
 
       - name: 🚀 Deploy Public Assets to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -76,5 +94,6 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./deploy/public_html/
-          server-dir: /public_html/AqwamBiz/ERP/
-          state-name: public.json
+          server-dir: ${{ env.SERVER_DIR_PUBLIC }}
+          state-name: public-${{ github.ref_name }}.json
+
