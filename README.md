@@ -84,12 +84,4 @@ php artisan serve
 | Dashboard | ![Dashboard Revamp](public/media/revamp-dashboard.png) |
 | Kasir/POS | ![POS Revamp](public/media/revamp-pos.png)             |
 
-### Versi 1.0 (Legacy)
-
-| Modul                  | Preview                                                    |
-| ---------------------- | ---------------------------------------------------------- |
-| Dashboard              | ![Dashboard Screenshot](public/media/readme-dashboard.png) |
-| Kasir / POS            | ![POS Screenshot](public/media/readme-pos.png)             |
-| Invoice Ready-to-Print | ![Invoice Screenshot](public/media/readme-invoice.png)     |
-
 <sub>_Tidak ada file? Silakan ganti dengan screenshot kamu sendiri di `public/media`._</sub
