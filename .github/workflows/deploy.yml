@@ -34,26 +34,28 @@ jobs:
 
       - name: 🧹 Prepare Folders for Deployment
         run: |
-          mkdir -p deploy/services
-          mkdir -p deploy/public_html
+          mkdir -p temp_deploy/services
+          mkdir -p temp_deploy/public_html
           
-          # Copy everything to services folder
-          cp -r . deploy/services/
+          # Copy everything except temp_deploy to services folder
+          find . -maxdepth 1 ! -name 'temp_deploy' ! -name '.' -exec cp -r {} temp_deploy/services/ \;
           
           # Move public content to public_html folder
-          mv deploy/services/public/* deploy/public_html/
+          mv temp_deploy/services/public/* temp_deploy/public_html/
           
           # Use production index.php
-          mv deploy/public_html/index.php.production deploy/public_html/index.php
+          mv temp_deploy/public_html/index.php.production temp_deploy/public_html/index.php
           
           # Cleanup services folder
-          rm -rf deploy/services/public
-          rm -rf deploy/services/node_modules
-          rm -rf deploy/services/tests
-          rm -f deploy/services/.env
-          rm -f deploy/services/.gitignore
-          rm -rf deploy/services/.github
-          rm -rf deploy/services/deploy
+          rm -rf temp_deploy/services/public
+          rm -rf temp_deploy/services/node_modules
+          rm -rf temp_deploy/services/tests
+          rm -f temp_deploy/services/.env
+          rm -f temp_deploy/services/.gitignore
+          rm -rf temp_deploy/services/.github
+          
+          # Rename for final deployment
+          mv temp_deploy deploy
 
       - name: 🚀 Deploy Services to cPanel
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
