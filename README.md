@@ -1,87 +1,92 @@
-# Point of Sales – Laravel & Inertia
+# Point of Sales & ERP – Laravel, Inertia & Vue 3 🚀
 
-> Sistem kasir modern dengan alur transaksi cepat, dukungan laporan, dan mode cetak invoice yang rapi. Kalau kamu suka proyek ini, bantu dengan menekan ⭐ di atas – itu sangat membantu visibilitas repositori ini.
+Sistem manajemen kasir (POS) dan ERP (Enterprise Resource Planning) modern yang dirancang untuk kecepatan transaksi, manajemen stok akurat antar gudang, dan integrasi akuntansi otomatis.
 
 ![Dashboard Preview](public/media/revamp-pos.png "Point of Sales Dashboard Preview")
-<sub>_Cuplikan antarmuka kasir revamp. Screenshot tambahan ada di bagian di bawah._</sub>
 
-## 🆕 What's New (Revamp 2.0)
+## 🛠️ Teknologi yang Digunakan
 
--   **UI/UX Redesign** – Tampilan modern dengan tema slate/primary, gradient accents, dan dark mode ready
--   **Landing Page Baru** – Halaman depan profesional dengan preview & perbandingan V1 vs Revamp
--   **Hold Transaction** – Simpan keranjang sementara, lanjutkan nanti
--   **Customer History** – Lihat riwayat transaksi pelanggan langsung dari halaman kasir
--   **Add Customer Modal** – Tambah pelanggan baru tanpa meninggalkan halaman transaksi
--   **Keyboard Shortcuts** – `/` atau `F5` untuk search, `Esc` untuk clear, dan lainnya
--   **Thermal Receipt** – Dukungan print struk 58mm dan 80mm
--   **Sample Data Seeder** – Data contoh lengkap dengan gambar produk
+Proyek ini dibangun menggunakan **TALL stack modern** (dengan penyesuaian):
+- **Backend**: [Laravel 12](https://laravel.com)
+- **Frontend**: [Inertia.js](https://inertiajs.com) + [Vue.js 3](https://vuejs.org) (Composition API)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com) + Vanilla CSS
+- **Iconography**: [Tabler Icons](https://tabler-icons.io)
+- **Charts**: [Chart.js](https://www.chartjs.org/)
+- **State Management**: Reactive Vue API
+- **Build Tool**: [Vite](https://vitejs.dev/)
 
-## ✨ Kenapa Menarik?
+## ✨ Fitur Utama
 
--   **Kasir cepat & intuitif** – pencarian barcode, keranjang, ringkasan pembayaran, dan kalkulasi diskon otomatis.
--   **Invoice siap cetak & payment link** – setelah transaksi, kasir bisa melihat preview invoice elegan, membagikan link pembayaran Midtrans/Xendit, dan memilih kapan mau mencetaknya.
--   **Laporan lengkap** – dari penjualan, profit, sampai riwayat transaksi dengan filter multi parameter.
--   **Akses berbasis role** – integrasi Spatie Permissions bawaan untuk role, user, dan hak akses yang granular.
--   **Dark mode ready** – UI sudah disiapkan untuk mode gelap/terang tanpa konfigurasi tambahan.
+### 1. Point of Sales (Kasir)
+- **Quick Checkout**: Pencarian produk via barcode atau nama dengan kalkulasi otomatis.
+- **Hold Transaction**: Simpan keranjang sementara dan lanjutkan nanti.
+- **Customer CRM**: Tambah pelanggan baru langsung dari kasir dan lihat riwayat belanja mereka secara instan.
+- **Shortcut Keyboards**: `/` atau `F5` untuk search, `F2` bayar, `Esc` clear.
 
-## 🔧 Teknologi Inti
+### 2. Manajemen Stok & Multi-Gudang
+- **Inventory Tracking**: Pantau stok secara real-time di berbagai lokasi gudang.
+- **Stock Mutation**: Pencatatan otomatis setiap perpindahan, penambahan, atau pengurangan stok.
+- **Zero-Value Transactions**: Modul khusus untuk mencatat barang rusak (damaged), barang expired, bonus, atau hadiah tanpa nilai nominal transaksi, lengkap dengan jurnal akuntansi otomatis.
 
--   [Laravel 12](https://laravel.com) + [Inertia.js](https://inertiajs.com)
--   [React](https://react.dev) + [Tailwind CSS](https://tailwindcss.com)
--   [Spatie Laravel Permission](https://spatie.be/docs/laravel-permission)
--   [Tabler Icons](https://tabler-icons.io) untuk ikon kasir modern
--   Integrasi payment gateway Midtrans Snap & Xendit Invoice (opsional)
+### 3. Sistem Pre-Order (PO)
+- **DP Tracking**: Mendukung pembayaran uang muka (Down Payment).
+- **Stock Booking**: Reservasi stok otomatis untuk pesanan PO agar tidak terjual ke pelanggan lain.
+- **Auto-Fulfillment**: Integrasi dengan modul Pembelian—stok otomatis dialokasikan ke PO yang menunggu saat barang datang.
 
-## 🚀 Cara Menjalankan
+### 4. Alur Persetujuan (Approval Flow)
+- **Finance Verification**: Verifikasi pembayaran oleh tim keuangan sebelum pesanan diteruskan.
+- **Warehouse Fulfillment**: Verifikasi ketersediaan dan pengemasan oleh tim gudang.
 
-```bash
-git clone https://github.com/aryadwiputra/point-of-sales.git
-cd point-of-sales
-cp .env.example .env
-composer install && npm install
-php artisan key:generate
-php artisan migrate --seed
-php artisan storage:link
-npm run dev
-php artisan serve
-```
+### 5. Akuntansi & Laporan
+- **Automatic Journaling**: Pencatatan jurnal Debit/Kredit otomatis untuk setiap transaksi penjualan, pelunasan piutang, dan penyesuaian stok.
+- **Receivables (Piutang)**: Pantau dan catat pelunasan piutang pelanggan untuk transaksi kredit atau PO.
+- **Reports**: Laporan penjualan, laba rugi (profit), dan mutasi stok yang lengkap.
 
-### Default Login
+### 6. Pencetakan Dokumen
+- **Thermal Receipt**: Support cetak struk ukuran 58mm dan 80mm.
+- **A4 Invoice**: Cetak invoice resmi ukuran A4 untuk transaksi besar.
 
--   **Admin**: `arya@gmail.com` / `password`
--   **Kasir**: `cashier@gmail.com` / `password`
+## 🚀 Cara Instalasi
 
-> **Tip:** Jalankan `php artisan db:seed --class=SampleDataSeeder` untuk data contoh lengkap dengan gambar.
+Ikuti langkah berikut untuk menjalankan proyek di lingkungan lokal Anda:
 
-## 📊 Fitur Utama
+1. **Clone Repository**
+   ```bash
+   git clone https://github.com/yudapw37/sistem-medium-erp.git
+   cd sistem-medium-erp
+   ```
 
--   **Dashboard**: ringkasan kategori, produk, transaksi, pendapatan, dan trend chart.
--   **Kelola Produk & Stok**: CRUD lengkap dengan kategori dan barcode unik.
--   **Modul Kasir**: pencarian barcode, keranjang multi item, diskon, hitung kembalian otomatis, dan pilihan gateway (tunai, Midtrans, Xendit).
--   **Hold Transaction**: Simpan keranjang sementara dan lanjutkan nanti.
--   **Customer History**: Lihat statistik dan riwayat transaksi pelanggan.
--   **Invoice / Payment Link**: tampilan siap cetak + tombol manual print dan tautan pembayaran yang bisa dibagikan ke pelanggan.
--   **Thermal Receipt**: Dukungan cetak struk thermal 58mm dan 80mm.
--   **Riwayat Transaksi**: filter per tanggal/invoice/kasir + export laporan.
--   **Laporan Profit & Penjualan**: pantau performa bisnis dalam sekali klik.
+2. **Install Dependensi**
+   ```bash
+   composer install
+   npm install
+   ```
 
-## ⌨️ Keyboard Shortcuts
+3. **Konfigurasi Environment**
+   ```bash
+   cp .env.example .env
+   # Update database credentials di file .env Anda
+   ```
 
-| Shortcut      | Aksi                        |
-| ------------- | --------------------------- |
-| `/` atau `F5` | Fokus pencarian produk      |
-| `Escape`      | Clear search & tutup modal  |
-| `F1`          | Buka numpad                 |
-| `F2`          | Submit transaksi            |
-| `F4`          | Tampilkan bantuan shortcuts |
+4. **Setup Database & Storage**
+   ```bash
+   php artisan key:generate
+   php artisan migrate --seed
+   php artisan storage:link
+   ```
 
-## 📷 Cuplikan Layar
+5. **Jalankan Aplikasi**
+   ```bash
+   # Terminal 1: Compile assets
+   npm run dev
 
-### Versi Revamp 2.0
+   # Terminal 2: Jalankan web server
+   php artisan serve
+   ```
 
-| Modul     | Preview                                                |
-| --------- | ------------------------------------------------------ |
-| Dashboard | ![Dashboard Revamp](public/media/revamp-dashboard.png) |
-| Kasir/POS | ![POS Revamp](public/media/revamp-pos.png)             |
+### Akun Demo:
+- **Admin**: `arya@gmail.com` / password: `password`
+- **Kasir**: `cashier@gmail.com` / password: `password`
 
-<sub>_Tidak ada file? Silakan ganti dengan screenshot kamu sendiri di `public/media`._</sub
+---
+Made with ❤️ by Point of Sales Community.
