@@ -10,7 +10,7 @@
                 </div>
                 <h2 class="text-3xl font-bold mb-4">Bergabung Bersama Kami</h2>
                 <p class="text-lg opacity-90">
-                    Mulai kelola bisnis Anda dengan sistem Point of Sale yang modern, cepat, dan mudah digunakan.
+                    Mulai kelola bisnis Anda dengan sistem medium ERP yang modern, cepat, dan mudah digunakan.
                 </p>
                 <div class="mt-8 space-y-3">
                     <div
@@ -35,7 +35,7 @@
                             <IconShoppingCart :size="24" class="text-white" />
                         </div>
                         <span class="text-2xl font-bold text-slate-900 dark:text-white">
-                            Aplikasi Kasir
+                            Aplikasi Medium ERP
                         </span>
                     </Link>
                     <h1 class="text-3xl font-bold text-slate-900 dark:text-white">

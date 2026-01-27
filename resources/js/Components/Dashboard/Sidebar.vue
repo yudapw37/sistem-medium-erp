@@ -11,7 +11,7 @@
                 <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
                     <span class="text-white font-bold text-sm">K</span>
                 </div>
-                <span class="text-xl font-bold text-slate-800 dark:text-white">KASIR</span>
+                <span class="text-xl font-bold text-slate-800 dark:text-white">Medium ERP</span>
             </div>
             <div v-else class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
                 <span class="text-white font-bold text-sm">K</span>
@@ -64,7 +64,7 @@
             <!-- Version -->
             <div v-if="sidebarOpen" class="pb-4 px-4 border-t border-slate-100 dark:border-slate-800 pt-4">
                 <p class="text-[10px] text-slate-400 dark:text-slate-600 text-center">
-                    Point of Sales v2.0
+                    Medium ERP v2.0
                 </p>
             </div>
         </div>

@@ -1,5 +1,5 @@
 <template>
-    <Head title="Aplikasi Kasir - Point of Sale Modern" />
+    <Head title="Aplikasi Medium ERP Modern" />
 
     <div class="min-h-screen bg-slate-50 dark:bg-slate-950">
         <!-- Navbar -->
@@ -10,7 +10,7 @@
                         <IconShoppingCart :size="22" class="text-white" />
                     </div>
                     <span class="text-xl font-bold text-slate-900 dark:text-white">
-                        Aplikasi Kasir
+                        Aplikasi Medium ERP
                     </span>
                 </div>
 
@@ -62,7 +62,7 @@
                     </div>
 
                     <h1 class="text-5xl md:text-6xl font-extrabold text-slate-900 dark:text-white leading-tight">
-                        Sistem Point of Sale
+                        Sistem Medium ERP
                         <span class="block mt-2 bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent">
                             Modern & Mudah Digunakan
                         </span>

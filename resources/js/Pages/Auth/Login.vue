@@ -12,7 +12,7 @@
                             <IconShoppingCart :size="24" class="text-white" />
                         </div>
                         <span class="text-2xl font-bold text-slate-900 dark:text-white">
-                            Aplikasi Kasir
+                            Aplikasi Medium ERP
                         </span>
                     </Link>
                     <h1 class="text-3xl font-bold text-slate-900 dark:text-white">
@@ -152,7 +152,7 @@
                 </div>
                 <h2 class="text-3xl font-bold mb-4">Kelola Bisnis Anda dengan Mudah</h2>
                 <p class="text-lg opacity-90">
-                    Sistem Point of Sale modern yang membantu Anda mengelola transaksi,
+                    Sistem Medium ERP modern yang membantu Anda mengelola transaksi,
                     inventori, dan laporan keuangan dengan efisien.
                 </p>
                 <div class="mt-8 flex flex-wrap justify-center gap-3">

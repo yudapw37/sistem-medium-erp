@@ -49,6 +49,7 @@ jobs:
           
           # Cleanup services folder
           rm -rf temp_deploy/services/public
+          rm -rf temp_deploy/services/vendor
           rm -rf temp_deploy/services/node_modules
           rm -rf temp_deploy/services/tests
           rm -f temp_deploy/services/.env
