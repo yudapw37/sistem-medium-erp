@@ -1,0 +1,9 @@
+--- DEBUG BUNDLE STOCK ---
+Bundle: Hemat Des Aqua (BDL-001)
+Status: ACTIVE
+  Warehouse [ID:1]: Gudang Utama
+    - Component: Aqua Botol 600ml | Need: 1 | Avail: 591 (Can make: 591)
+    - Component: Indomie Goreng | Need: 1 | Avail: 100 (Can make: 100)
+    - Component: Ultra Milk 1L | Need: 1 | Avail: 0 (Can make: 0)
+  => TOTAL BUNDLE STOCK in this WH: 0
+--------------------------
