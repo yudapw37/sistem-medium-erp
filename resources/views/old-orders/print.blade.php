@@ -156,7 +156,11 @@
         <table class="header-table">
             <tr>
                 <td class="header-brand">
-                    <img src="{{ public_path('assets/logo/logoInv.png') }}" alt="AQWAM" style="max-height: 120px;">
+                    @if($logo)
+                        <img src="{{ $logo }}" alt="AQWAM" style="max-height: 120px;">
+                    @else
+                        <img src="{{ public_path('assets/logo/logoInv.png') }}" alt="AQWAM" style="max-height: 120px;">
+                    @endif
                 </td>
                 <td class="order-info-td">
                     <div class="order-info-content">

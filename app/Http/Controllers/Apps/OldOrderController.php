@@ -77,7 +77,12 @@ class OldOrderController extends Controller
             $preparedOrders[] = $this->prepareOrderData($order);
         }
 
-        $pdf = Pdf::loadView('old-orders.print', ['orders' => $preparedOrders]);
+        $logoBase64 = $this->getLogoBase64();
+
+        $pdf = Pdf::loadView('old-orders.print', [
+            'orders' => $preparedOrders,
+            'logo' => $logoBase64
+        ]);
         $pdf->setPaper('a4');
 
         return $pdf->stream('Bulk_Invoices_' . date('Y-m-d') . '.pdf');
@@ -92,11 +97,36 @@ class OldOrderController extends Controller
         $data = $this->prepareOrderData($order);
 
         $filename = 'Invoice_' . $order->id . '_' . ($order->customer->nama ?? 'Customer') . '.pdf';
+        
+        $logoBase64 = $this->getLogoBase64();
 
-        $pdf = Pdf::loadView('old-orders.print', ['orders' => [$data]]);
+        $pdf = Pdf::loadView('old-orders.print', [
+            'orders' => [$data],
+            'logo' => $logoBase64
+        ]);
         $pdf->setPaper('a4');
 
         return $pdf->stream($filename);
+    }
+
+    /**
+     * Helper to get logo as base64
+     */
+    private function getLogoBase64()
+    {
+        $path = public_path('assets/logo/logoInv.png');
+        if (!file_exists($path)) {
+            // Fallback for production with separate app/public folders
+            // Try to find it in the current DIR's sibling if public isn't found
+            $path = base_path('../public_html/assets/logo/logoInv.png');
+            if (!file_exists($path)) {
+                return null;
+            }
+        }
+        
+        $type = pathinfo($path, PATHINFO_EXTENSION);
+        $data = file_get_contents($path);
+        return 'data:image/' . $type . ';base64,' . base64_encode($data);
     }
 
     /**
