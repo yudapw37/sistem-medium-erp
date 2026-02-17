@@ -114,18 +114,31 @@ class OldOrderController extends Controller
      */
     private function getLogoBase64()
     {
-        $path = public_path('assets/logo/logoInv.png');
-        if (!file_exists($path)) {
-            // Fallback for production with separate app/public folders
-            // Try to find it in the current DIR's sibling if public isn't found
-            $path = base_path('../public_html/assets/logo/logoInv.png');
-            if (!file_exists($path)) {
-                return null;
+        $logoName = 'assets/logo/logoInv.png';
+        
+        // Try these paths in order
+        $paths = [
+            public_path($logoName),                      // Default Laravel
+            base_path('../public_html/' . $logoName),    // Common Shared Hosting
+            base_path('../public/' . $logoName),         // Standard sibling public
+            base_path('../www/' . $logoName),            // Another common one
+            base_path('public/' . $logoName),            // Local fallback
+        ];
+
+        $finalPath = null;
+        foreach ($paths as $path) {
+            if (file_exists($path)) {
+                $finalPath = $path;
+                break;
             }
         }
+
+        if (!$finalPath) {
+            return null;
+        }
         
-        $type = pathinfo($path, PATHINFO_EXTENSION);
-        $data = file_get_contents($path);
+        $type = pathinfo($finalPath, PATHINFO_EXTENSION);
+        $data = file_get_contents($finalPath);
         return 'data:image/' . $type . ';base64,' . base64_encode($data);
     }
 
