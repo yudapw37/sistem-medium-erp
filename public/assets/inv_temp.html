@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            color: #000;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .page {
+            background: #fff;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 10px 20px;
+            margin: auto;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .top-meta {
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            /* border-bottom: 1px solid #000; */
+            padding-bottom: 5px;
+        }
+
+        .header-brand {
+            text-align: left;
+        }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .greeting {
+            margin: 10px 0;
+        }
+
+        .order-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-bottom: 15px;margin-left: -20px;
+            text-align: left;
+        }
+
+        .order-info div:nth-child(odd) {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .order-info div:nth-child(even) {
+            font-weight: bold;
+        }
+
+        .status-box {
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 11px;
+        }
+
+        th {
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 5px;
+            text-align: left;
+        }
+
+        td {
+            padding: 5px;
+            vertical-align: top;
+            border-bottom: 0.5px solid #eee;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .summary {
+            margin-left: auto;
+            width: 300px;
+            margin-top: 10px;
+        }
+
+        .summary div {
+            display: flex;
+            justify-content: space-between;
+            padding: 2px 0;
+        }
+
+        .total {
+            font-weight: bold;
+            border-top: 1px solid #000;
+            margin-top: 5px;
+            padding-top: 5px !important;
+        }
+
+        .bank-info {
+            margin-top: 20px;
+            font-size: 11px;
+        }
+
+        .note {
+            margin-top: 10px;
+            font-size: 10px;
+            font-style: italic;
+            max-width: 500px;
+            border: 1px solid red;
+            padding: 8px;
+        }
+
+        .shipping-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .shipping-box {}
+
+        .bottom-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 30px;
+            border-top: 1px dashed #000;
+            margin-top: 20px;
+            padding-top: 10px;
+        }
+
+        .bottom-left {
+            flex: 1;
+        }
+
+        .bottom-right {
+            flex: 1;
+        }
+
+        .footer-meta {
+            text-align: right;
+            font-size: 10px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="page">
+        <!-- <div class="top-meta"> -->
+        <!-- <span>2/16/26, 1:27 PM</span> -->
+        <!-- <span>BackOffice System Management</span> -->
+        <!-- </div> -->
+
+        <div class="header-row">
+            <div class="header-brand">
+                <img src="logoInv.png" alt="AQWAM" style="max-height: 60px;">
+            </div>
+
+            <div class="order-info">
+                <div>Tanggal</div>
+                <div>2024-07-16 13:54:49</div>
+                <div>Nomor Invoice</div>
+                <div>ORD-24G16-100014JK</div>
+                <div>Nama Admin</div>
+                <div>Dwi</div>
+            </div>
+        </div>
+
+
+        <div class="greeting">
+            Assalamu'alaikum Warahmatullahi Wabarakatuh<br>
+            Kepada <strong>Cinta Buku (BM)</strong><br>
+            Terimakasih sudah berbelanja di AQWAM STORE, Berikut rincian dari orderan anda:
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Nama Produk</th>
+                    <th>Jml</th>
+                    <th>Berat</th>
+                    <th>Harga</th>
+                    <th>Disc</th>
+                    <th class="text-right">Sub Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Biografi 35 Sahabiyah Nabi</td>
+                    <td>20</td>
+                    <td>1.1 kg</td>
+                    <td>125.000</td>
+                    <td>45%</td>
+                    <td class="text-right">2.500.000</td>
+                </tr>
+                <tr>
+                    <td>Al-Lulu wal Marjan New</td>
+                    <td>100</td>
+                    <td>1.68 kg</td>
+                    <td>188.000</td>
+                    <td>45%</td>
+                    <td class="text-right">18.800.000</td>
+                </tr>
+                <tr>
+                    <td>Riyadhus Shalihin (HC)</td>
+                    <td>12</td>
+                    <td>1.9 kg</td>
+                    <td>198.000</td>
+                    <td>45%</td>
+                    <td class="text-right">2.376.000</td>
+                </tr>
+                <tr>
+                    <td>Menulis Al Quran Juz 30</td>
+                    <td>20</td>
+                    <td>0.2 kg</td>
+                    <td>35.000</td>
+                    <td>45%</td>
+                    <td class="text-right">700.000</td>
+                </tr>
+                <tr>
+                    <td>Biografi Imam Al-Ghazali & Syekh AQJ</td>
+                    <td>5</td>
+                    <td>0.62 kg</td>
+                    <td>99.000</td>
+                    <td>45%</td>
+                    <td class="text-right">495.000</td>
+                </tr>
+                <tr>
+                    <td>Kisah Para Tabiin</td>
+                    <td>5</td>
+                    <td>1.32 kg</td>
+                    <td>185.000</td>
+                    <td>45%</td>
+                    <td class="text-right">925.000</td>
+                </tr>
+                <tr>
+                    <td>Tadabur Al-Qur'an for Kids</td>
+                    <td>20</td>
+                    <td>0.45 kg</td>
+                    <td>99.000</td>
+                    <td>45%</td>
+                    <td class="text-right">1.980.000</td>
+                </tr>
+                <tr>
+                    <td>Talimul Mutaalim Edisi Baru (Ayyuhal Walad)</td>
+                    <td>30</td>
+                    <td>0.3 kg</td>
+                    <td>65.000</td>
+                    <td>50%</td>
+                    <td class="text-right">1.950.000</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="summary">
+            <div><span>Jumlah</span> <span>29.726.000</span></div>
+            <div><span>Diskon</span> <span>13.474.200</span></div>
+            <div><span>Diskon Kode Unik</span> <span>419</span></div>
+            <div class="total"><span>TOTAL</span> <span>16.251.381</span></div>
+        </div>
+
+        <div class="bottom-section">
+            <div class="bottom-left">
+                <div class="bank-info">
+                    <strong>Rekening Pembayaran</strong><br>
+                    - Mandiri 138-00-2980809-9 an PT AQWAM MEDIA PROFETIKA<br>
+                    - BSI 700-2055-273 an PT AQWAM MEDIA PROFETIKA
+                </div>
+
+                <p>Semoga Allah Memberi Keberkahan</p>
+                <div class="note">
+                    NOTE: Untuk mendukung kecepatan dan ketepatan pengiriman order, harap transfer sesuai dengan nominal
+                    invoice, melalui satu rekening bank yang dipilih.
+                </div>
+            </div>
+
+            <div class="bottom-right">
+                <div class="shipping-container">
+                    <div class="shipping-box">
+                        <strong>#Pengirim</strong><br>
+                        Cinta Buku (081393392481)
+                    </div>
+                    <div class="shipping-box">
+                        <strong>#Tujuan</strong><br>
+                        Cinta Buku (0812 1010 6191)<br>
+                        Yayasan Baitul Maqdis, JI. Malaka Raya No. 10 Kel. Kelapa Dua Wetan, 13730<br>
+                        Kec. Ciracas, Kab. Jakarta Timur, DKI Jakarta
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

@@ -506,6 +506,13 @@ export default function useMenu() {
                     icon: IconClockHour6,
                     permissions: hasAnyPermission(['transactions-access']),
                 },
+                {
+                    title: 'Old Order',
+                    href: route('old-orders.index'),
+                    active: url.startsWith('/dashboard/old-orders'),
+                    icon: IconReceipt2,
+                    permissions: hasAnyPermission(['transactions-access']),
+                },
             ],
         },
         {

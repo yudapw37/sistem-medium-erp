@@ -48,6 +48,7 @@ use App\Http\Controllers\Apps\TaxReportController;
 use App\Http\Controllers\Apps\UnitController;
 use App\Http\Controllers\Apps\StockPenyesuaianController;
 use App\Http\Controllers\Apps\ZeroValueTransactionController;
+use App\Http\Controllers\Apps\OldOrderController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
@@ -166,6 +167,13 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::post('/sales/import/{id}/finalize', [SaleController::class, 'finalizeImport'])->name('sales.import.finalize');
     Route::resource('sales', SaleController::class)
         ->middleware(['permission:transactions-access']);
+
+    // Old Orders (Legacy System)
+    Route::get('/old-orders', [OldOrderController::class, 'index'])->middleware('permission:transactions-access')->name('old-orders.index');
+    Route::get('/old-orders/by-date', [OldOrderController::class, 'ordersByDate'])->middleware('permission:transactions-access')->name('old-orders.by-date');
+    Route::post('/old-orders/bulk-print', [OldOrderController::class, 'bulkPrint'])->middleware('permission:transactions-access')->name('old-orders.bulk-print');
+    Route::get('/old-orders/{id}/print', [OldOrderController::class, 'print'])->middleware('permission:transactions-access')->name('old-orders.print');
+    Route::get('/old-orders/{id}', [OldOrderController::class, 'show'])->middleware('permission:transactions-access')->name('old-orders.show');
 
     // Sale Approval Routes
     Route::get('/approvals/finance', [SaleApprovalController::class, 'financeIndex'])

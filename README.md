@@ -1,54 +1,46 @@
-# Point of Sales & ERP – Laravel, Inertia & Vue 3 🚀
-
-Sistem manajemen kasir (POS) dan ERP (Enterprise Resource Planning) modern yang dirancang untuk kecepatan transaksi, manajemen stok akurat antar gudang, dan integrasi akuntansi otomatis.
+# Point of Sales & ERP System 🚀
 
 ![Dashboard Preview](public/media/revamp-pos.png "Point of Sales Dashboard Preview")
 
+## 📖 Tentang Sistem Ini
+
+Sistem Point of Sales (POS) dan ERP (Enterprise Resource Planning) modern yang dirancang untuk mendukung operasional bisnis retail dengan fitur-fitur lengkap:
+
+- **Point of Sales (Kasir)**: Checkout cepat dengan barcode scanner, hold transaction, shortcut keyboard, dan integrasi CRM pelanggan.
+- **Manajemen Stok & Multi-Gudang**: Tracking inventori real-time, mutasi stok antar gudang, dan pencatatan barang rusak/expired.
+- **Sistem Pre-Order**: Dukungan Down Payment, booking stok otomatis, dan auto-fulfillment saat barang datang.
+- **Workflow Persetujuan**: Verifikasi pembayaran oleh finance dan fulfillment oleh warehouse.
+- **Akuntansi Otomatis**: Pencatatan jurnal Debit/Kredit otomatis, manajemen piutang, dan laporan keuangan.
+- **Pencetakan Dokumen**: Cetak struk thermal (58mm/80mm) dan invoice A4.
+
+---
+
 ## 🛠️ Teknologi yang Digunakan
 
-Proyek ini dibangun menggunakan **TALL stack modern** (dengan penyesuaian):
-- **Backend**: [Laravel 12](https://laravel.com)
-- **Frontend**: [Inertia.js](https://inertiajs.com) + [Vue.js 3](https://vuejs.org) (Composition API)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com) + Vanilla CSS
-- **Iconography**: [Tabler Icons](https://tabler-icons.io)
-- **Charts**: [Chart.js](https://www.chartjs.org/)
-- **State Management**: Reactive Vue API
-- **Build Tool**: [Vite](https://vitejs.dev/)
+| Kategori | Teknologi |
+|----------|-----------|
+| **Backend** | Laravel 12, PHP 8.2+ |
+| **Frontend** | Vue.js 3 (Composition API), Inertia.js |
+| **Styling** | Tailwind CSS |
+| **Icons** | Tabler Icons |
+| **Charts** | Chart.js |
+| **UI Components** | HeadlessUI, SweetAlert2, Vue Toastification |
+| **Build Tool** | Vite |
+| **Database** | MySQL / SQLite |
+| **Authentication** | Laravel Sanctum, Laravel Breeze |
+| **Authorization** | Spatie Laravel Permission |
 
-## ✨ Fitur Utama
+---
 
-### 1. Point of Sales (Kasir)
-- **Quick Checkout**: Pencarian produk via barcode atau nama dengan kalkulasi otomatis.
-- **Hold Transaction**: Simpan keranjang sementara dan lanjutkan nanti.
-- **Customer CRM**: Tambah pelanggan baru langsung dari kasir dan lihat riwayat belanja mereka secara instan.
-- **Shortcut Keyboards**: `/` atau `F5` untuk search, `F2` bayar, `Esc` clear.
+## 🚀 Cara Menjalankan
 
-### 2. Manajemen Stok & Multi-Gudang
-- **Inventory Tracking**: Pantau stok secara real-time di berbagai lokasi gudang.
-- **Stock Mutation**: Pencatatan otomatis setiap perpindahan, penambahan, atau pengurangan stok.
-- **Zero-Value Transactions**: Modul khusus untuk mencatat barang rusak (damaged), barang expired, bonus, atau hadiah tanpa nilai nominal transaksi, lengkap dengan jurnal akuntansi otomatis.
+### Prasyarat
+- PHP 8.2+
+- Composer
+- Node.js & NPM
+- MySQL atau SQLite
 
-### 3. Sistem Pre-Order (PO)
-- **DP Tracking**: Mendukung pembayaran uang muka (Down Payment).
-- **Stock Booking**: Reservasi stok otomatis untuk pesanan PO agar tidak terjual ke pelanggan lain.
-- **Auto-Fulfillment**: Integrasi dengan modul Pembelian—stok otomatis dialokasikan ke PO yang menunggu saat barang datang.
-
-### 4. Alur Persetujuan (Approval Flow)
-- **Finance Verification**: Verifikasi pembayaran oleh tim keuangan sebelum pesanan diteruskan.
-- **Warehouse Fulfillment**: Verifikasi ketersediaan dan pengemasan oleh tim gudang.
-
-### 5. Akuntansi & Laporan
-- **Automatic Journaling**: Pencatatan jurnal Debit/Kredit otomatis untuk setiap transaksi penjualan, pelunasan piutang, dan penyesuaian stok.
-- **Receivables (Piutang)**: Pantau dan catat pelunasan piutang pelanggan untuk transaksi kredit atau PO.
-- **Reports**: Laporan penjualan, laba rugi (profit), dan mutasi stok yang lengkap.
-
-### 6. Pencetakan Dokumen
-- **Thermal Receipt**: Support cetak struk ukuran 58mm dan 80mm.
-- **A4 Invoice**: Cetak invoice resmi ukuran A4 untuk transaksi besar.
-
-## 🚀 Cara Instalasi
-
-Ikuti langkah berikut untuk menjalankan proyek di lingkungan lokal Anda:
+### Langkah-langkah
 
 1. **Clone Repository**
    ```bash
@@ -65,10 +57,18 @@ Ikuti langkah berikut untuk menjalankan proyek di lingkungan lokal Anda:
 3. **Konfigurasi Environment**
    ```bash
    cp .env.example .env
-   # Update database credentials di file .env Anda
+   ```
+   Edit file `.env` dan sesuaikan konfigurasi database:
+   ```env
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=nama_database
+   DB_USERNAME=username
+   DB_PASSWORD=password
    ```
 
-4. **Setup Database & Storage**
+4. **Setup Database**
    ```bash
    php artisan key:generate
    php artisan migrate --seed
@@ -76,17 +76,30 @@ Ikuti langkah berikut untuk menjalankan proyek di lingkungan lokal Anda:
    ```
 
 5. **Jalankan Aplikasi**
+   
+   Buka 2 terminal terpisah:
+   
+   **Terminal 1** - Build assets:
    ```bash
-   # Terminal 1: Compile assets
    npm run dev
-
-   # Terminal 2: Jalankan web server
+   ```
+   
+   **Terminal 2** - Web server:
+   ```bash
    php artisan serve
    ```
 
-### Akun Demo:
-- **Admin**: `arya@gmail.com` / password: `password`
-- **Kasir**: `cashier@gmail.com` / password: `password`
+6. **Akses Aplikasi**
+   
+   Buka browser dan kunjungi: `http://localhost:8000`
+
+### 👤 Akun Demo
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | arya@gmail.com | password |
+| Kasir | cashier@gmail.com | password |
 
 ---
+
 Made with ❤️ by Point of Sales Community.
