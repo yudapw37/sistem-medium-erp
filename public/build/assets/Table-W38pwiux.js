@@ -1,0 +1,1 @@
+import{a as o,g as r,d as s,q as a}from"./app-CIYeQ-4j.js";const t={class:"w-full overflow-hidden overflow-x-auto border-collapse rounded-b-lg border border-t-0 dark:border-gray-900"},l={class:"w-full text-sm"},_={__name:"Table",setup(d){return(e,c)=>(o(),r("div",t,[s("table",l,[a(e.$slots,"default")])]))}};export{_};
