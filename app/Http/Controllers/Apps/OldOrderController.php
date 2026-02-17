@@ -114,19 +114,20 @@ class OldOrderController extends Controller
      */
     private function getLogoBase64()
     {
-        $logoName = 'assets/logo/logoInv.png';
+        $logoRelativePath = 'assets/logo/logoInv.png';
         
-        // Try these paths in order
+        // Comprehensive list of potential paths
         $paths = [
-            public_path($logoName),                      // Default Laravel
-            base_path('../public_html/' . $logoName),    // Common Shared Hosting
-            base_path('../public/' . $logoName),         // Standard sibling public
-            base_path('../www/' . $logoName),            // Another common one
-            base_path('public/' . $logoName),            // Local fallback
+            public_path($logoRelativePath),
+            realpath(base_path('../public_html/' . $logoRelativePath)),
+            realpath(base_path('../public/' . $logoRelativePath)),
+            realpath(base_path('public/' . $logoRelativePath)),
+            isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] . '/' . $logoRelativePath : null,
+            isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] . '/../public_html/' . $logoRelativePath : null,
         ];
 
         $finalPath = null;
-        foreach ($paths as $path) {
+        foreach (array_filter($paths) as $path) {
             if (file_exists($path)) {
                 $finalPath = $path;
                 break;
@@ -134,6 +135,8 @@ class OldOrderController extends Controller
         }
 
         if (!$finalPath) {
+            // Log for debugging (temporary)
+            \Log::warning("Logo not found for PDF. Tried: " . implode(', ', array_filter($paths)));
             return null;
         }
         
