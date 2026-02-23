@@ -1,0 +1,6 @@
+import{a as r,g as a,F as l,p as c,c as t,w as i,u as s,t as g,n as d,j as u,h}from"./app-DA0EYa_6.js";import{c as k}from"./createVueComponent-CUBUAVU4.js";import{I as y}from"./IconChevronRight-QKrPJlsB.js";/**
+ * @license @tabler/icons-vue v3.36.0 - MIT
+ *
+ * This source code is licensed under the MIT license.
+ * See the LICENSE file in the root directory of this source tree.
+ */var b=k("outline","chevron-left","ChevronLeft",[["path",{d:"M15 6l-6 6l6 6",key:"svg-0"}]]);const p={class:"mt-2 lg:mt-5 justify-end flex items-center gap-1"},f={key:2},m="p-1 text-sm border rounded-md bg-white text-gray-500 hover:bg-gray-100 dark:bg-gray-950 dark:text-gray-400 dark:hover:bg-gray-900 dark:border-gray-900",z={__name:"Pagination",props:{links:Array},setup(n){return(_,v)=>(r(),a("ul",p,[(r(!0),a(l,null,c(n.links,(e,o)=>(r(),a(l,{key:o},[e.url!=null?(r(),t(s(u),{key:0,href:e.url,class:d([m,e.label.includes("Previous")||e.label.includes("Next")?"":e.active?"bg-white text-gray-700 dark:bg-gray-900 dark:text-gray-50":"bg-white dark:bg-gray-950"])},{default:i(()=>[e.label.includes("Previous")?(r(),t(s(b),{key:0,size:20,"stroke-width":1.5})):e.label.includes("Next")?(r(),t(s(y),{key:1,size:20,"stroke-width":1.5})):(r(),a("span",f,g(e.label),1))]),_:2},1032,["href","class"])):h("",!0)],64))),128))]))}};export{z as _};

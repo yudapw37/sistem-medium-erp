@@ -24,6 +24,7 @@ class OldOrder extends Model
         'totalDiskon',
         'diskonKodeUnik',
         'biayaExpedisi',
+        'resume_status',
     ];
 
     protected $casts = [
@@ -32,6 +33,7 @@ class OldOrder extends Model
         'totalDiskon' => 'decimal:2',
         'diskonKodeUnik' => 'decimal:2',
         'biayaExpedisi' => 'decimal:2',
+        'resume_status' => 'boolean',
     ];
 
     public function customer()

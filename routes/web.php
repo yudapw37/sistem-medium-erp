@@ -103,7 +103,7 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
         ->middlewareFor('edit', 'permission:customers-edit')
         ->middlewareFor('update', 'permission:customers-edit')
         ->middlewareFor('destroy', 'permission:customers-delete');
-    
+
     Route::resource('customer-addresses', CustomerAddressController::class)
         ->middleware(['permission:customers-access']);
 
@@ -170,6 +170,14 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
 
     // Old Orders (Legacy System)
     Route::get('/old-orders', [OldOrderController::class, 'index'])->middleware('permission:transactions-access')->name('old-orders.index');
+    Route::get('/old-orders/resume', [OldOrderController::class, 'resume'])->middleware('permission:transactions-access')->name('old-orders.resume');
+    Route::get('/old-orders/resume-report', [OldOrderController::class, 'resumeReport'])->middleware('permission:transactions-access')->name('old-orders.resume-report');
+    Route::get('/old-orders/resume-report-detail', [OldOrderController::class, 'resumeReportDetail'])->middleware('permission:transactions-access')->name('old-orders.resume-report-detail');
+    Route::get('/old-orders/resume/{year}/{month}', [OldOrderController::class, 'resumeDetail'])->middleware('permission:transactions-access')->name('old-orders.resume-detail');
+    Route::put('/old-orders/{id}/toggle-status', [OldOrderController::class, 'toggleResumeStatus'])->middleware('permission:transactions-access')->name('old-orders.toggle-status');
+    Route::get('/old-orders/resume/{year}/{month}/export-excel', [OldOrderController::class, 'exportResumeExcel'])->middleware('permission:transactions-access')->name('old-orders.resume-export-excel');
+    Route::get('/old-orders/product-resume', [OldOrderController::class, 'productResume'])->middleware('permission:transactions-access')->name('old-orders.product-resume');
+    Route::get('/old-orders/product-resume/export-excel', [OldOrderController::class, 'exportProductResumeExcel'])->middleware('permission:transactions-access')->name('old-orders.product-resume-export-excel');
     Route::get('/old-orders/by-date', [OldOrderController::class, 'ordersByDate'])->middleware('permission:transactions-access')->name('old-orders.by-date');
     Route::post('/old-orders/bulk-print', [OldOrderController::class, 'bulkPrint'])->middleware('permission:transactions-access')->name('old-orders.bulk-print');
     Route::get('/old-orders/{id}/print', [OldOrderController::class, 'print'])->middleware('permission:transactions-access')->name('old-orders.print');
@@ -188,7 +196,7 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::post('/approvals/finance/{id}/reject', [SaleApprovalController::class, 'financeReject'])
         ->middleware('permission:sales-approve-finance')
         ->name('approvals.finance.reject');
-    
+
     Route::get('/approvals/warehouse', [SaleApprovalController::class, 'warehouseIndex'])
         ->middleware('permission:sales-approve-warehouse')
         ->name('approvals.warehouse.index');
@@ -201,7 +209,7 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::post('/approvals/warehouse/{id}/reject', [SaleApprovalController::class, 'warehouseReject'])
         ->middleware('permission:sales-approve-warehouse')
         ->name('approvals.warehouse.reject');
-    
+
     Route::get('/approvals/{id}/show', [SaleApprovalController::class, 'show'])
         ->middleware('permission:sales-approval-access')
         ->name('approvals.show');

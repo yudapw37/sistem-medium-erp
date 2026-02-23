@@ -1,1 +1,0 @@
-import{a as s,g as a,t as r,B as m,h as n}from"./app-CIYeQ-4j.js";const g={__name:"InputError",props:{message:String,className:{type:String,default:""}},setup(e){return(t,c)=>e.message?(s(),a("p",m({key:0,class:["text-sm text-red-600",e.className]},t.$attrs),r(e.message),17)):n("",!0)}};export{g as _};

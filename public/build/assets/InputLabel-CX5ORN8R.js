@@ -1,1 +1,0 @@
-import{a as t,g as s,q as r,e as l,t as o,B as n}from"./app-CIYeQ-4j.js";const u={__name:"InputLabel",props:{value:String,className:{type:String,default:""}},setup(e){return(a,c)=>(t(),s("label",n({class:["block font-medium text-sm text-gray-700",e.className]},a.$attrs),[r(a.$slots,"default",{},()=>[l(o(e.value),1)])],16))}};export{u as _};
