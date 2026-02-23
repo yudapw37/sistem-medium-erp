@@ -59,6 +59,35 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+// ============================================================
+// TEMPORARY: Route untuk menjalankan migrasi tanpa terminal
+// Akses via browser: https://yourdomain.com/run-migrate/your-secret-token-here
+// HAPUS ROUTE INI SETELAH MIGRASI SELESAI!
+// ============================================================
+Route::get('/run-migrate/{token}', function ($token) {
+    // Ganti token ini dengan string rahasia Anda sendiri
+    $secretToken = 'erp-migrate-2026-secret';
+
+    if ($token !== $secretToken) {
+        abort(404);
+    }
+
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $output = \Illuminate\Support\Facades\Artisan::output();
+
+        return '<pre style="background:#1a1a2e;color:#0f0;padding:20px;font-family:monospace;">'
+            . '✅ Migrasi berhasil dijalankan!' . PHP_EOL . PHP_EOL
+            . htmlspecialchars($output)
+            . '</pre>';
+    } catch (\Exception $e) {
+        return '<pre style="background:#1a1a2e;color:#f00;padding:20px;font-family:monospace;">'
+            . '❌ Migrasi gagal!' . PHP_EOL . PHP_EOL
+            . htmlspecialchars($e->getMessage())
+            . '</pre>';
+    }
+});
+
 Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::get('/', [DashboardController::class, 'index'])->middleware(['auth', 'verified', 'permission:dashboard-access'])->name('dashboard');
     Route::get('/permissions', [PermissionController::class, 'index'])->middleware('permission:permissions-access')->name('permissions.index');
