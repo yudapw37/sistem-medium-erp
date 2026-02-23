@@ -525,13 +525,13 @@ export default function useMenu() {
                             icon: IconClockHour6,
                             permissions: hasAnyPermission(['transactions-access']),
                         },
-                        {
-                            title: 'Produk Resume',
-                            href: route('old-orders.product-resume'),
-                            active: url.startsWith('/dashboard/old-orders/product-resume'),
-                            icon: IconBooks,
-                            permissions: hasAnyPermission(['transactions-access']),
-                        },
+                        // {
+                        //     title: 'Produk Resume',
+                        //     href: route('old-orders.product-resume'),
+                        //     active: url.startsWith('/dashboard/old-orders/product-resume'),
+                        //     icon: IconBooks,
+                        //     permissions: hasAnyPermission(['transactions-access']),
+                        // },
                         {
                             title: 'Laporan Resume',
                             href: route('old-orders.resume-report'),

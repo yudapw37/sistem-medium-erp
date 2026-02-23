@@ -562,4 +562,92 @@ class OldOrderController extends Controller
             'Cache-Control' => 'max-age=0',
         ]);
     }
+
+    /**
+     * Export resume report (book sales) to Excel.
+     */
+    public function exportResumeReportExcel(Request $request)
+    {
+        $month = $request->month ?? date('n');
+        $year = $request->year ?? date('Y');
+        $resumeStatus = $request->has('resume_status') ? $request->boolean('resume_status') : true;
+
+        $startDate = sprintf('%04d-%02d-01 00:00:00', $year, $month);
+        $endDate = date('Y-m-t 23:59:59', strtotime($startDate));
+
+        $items = DB::table('old_orderdetail')
+            ->join('old_order', 'old_orderdetail.code_order', '=', 'old_order.id')
+            ->join('old_ms_barang', 'old_orderdetail.code_barang', '=', 'old_ms_barang.id')
+            ->select(
+                'old_ms_barang.judul_buku as nama_buku',
+                DB::raw('SUM(old_orderdetail.jumlah) as jumlah_buku'),
+                DB::raw('SUM(
+                    (CASE WHEN old_orderdetail.harga_promo > 0 THEN old_orderdetail.harga_promo ELSE old_orderdetail.Harga END) 
+                    * old_orderdetail.jumlah 
+                    * (1 - COALESCE(old_orderdetail.diskon, 0) / 100)
+                ) as total_harga_buku')
+            )
+            ->whereBetween('old_order.created_at', [$startDate, $endDate])
+            ->where('old_order.resume_status', $resumeStatus)
+            ->groupBy('old_ms_barang.judul_buku')
+            ->orderBy('jumlah_buku', 'desc')
+            ->get();
+
+        $monthNames = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
+        ];
+        $monthName = $monthNames[(int) $month] ?? $month;
+        $statusLabel = $resumeStatus ? 'Aktif' : 'Tidak Aktif';
+
+        $data = [
+            ['<b>LAPORAN RESUME OLD ORDER - ' . strtoupper($monthName) . ' ' . $year . '</b>'],
+            ['Status: ' . $statusLabel],
+            [''],
+            ['<b>No</b>', '<b>Nama Buku</b>', '<b>Jumlah Buku</b>', '<b>Total Harga Buku</b>']
+        ];
+
+        $no = 1;
+        $totalQty = 0;
+        $totalAmount = 0;
+        foreach ($items as $item) {
+            $qty = (int) $item->jumlah_buku;
+            $amount = (float) $item->total_harga_buku;
+            $data[] = [
+                $no++,
+                $item->nama_buku ?? 'Tanpa Judul',
+                $qty,
+                'Rp ' . number_format($amount, 0, ',', '.')
+            ];
+            $totalQty += $qty;
+            $totalAmount += $amount;
+        }
+
+        $data[] = [''];
+        $data[] = ['', '<b>TOTAL KESELURUHAN</b>', '<b>' . $totalQty . '</b>', '<b>Rp ' . number_format($totalAmount, 0, ',', '.') . '</b>'];
+
+        $filename = 'laporan_resume_' . $monthName . '_' . $year . '_' . date('His') . '.xlsx';
+        $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($data);
+
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        return response()->streamDownload(function () use ($xlsx) {
+            $xlsx->saveAs('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
 }

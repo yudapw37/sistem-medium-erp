@@ -207,6 +207,7 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::get('/old-orders/resume/{year}/{month}/export-excel', [OldOrderController::class, 'exportResumeExcel'])->middleware('permission:transactions-access')->name('old-orders.resume-export-excel');
     Route::get('/old-orders/product-resume', [OldOrderController::class, 'productResume'])->middleware('permission:transactions-access')->name('old-orders.product-resume');
     Route::get('/old-orders/product-resume/export-excel', [OldOrderController::class, 'exportProductResumeExcel'])->middleware('permission:transactions-access')->name('old-orders.product-resume-export-excel');
+    Route::get('/old-orders/resume-report/export-excel', [OldOrderController::class, 'exportResumeReportExcel'])->middleware('permission:transactions-access')->name('old-orders.resume-report-export-excel');
     Route::get('/old-orders/by-date', [OldOrderController::class, 'ordersByDate'])->middleware('permission:transactions-access')->name('old-orders.by-date');
     Route::post('/old-orders/bulk-print', [OldOrderController::class, 'bulkPrint'])->middleware('permission:transactions-access')->name('old-orders.bulk-print');
     Route::get('/old-orders/{id}/print', [OldOrderController::class, 'print'])->middleware('permission:transactions-access')->name('old-orders.print');

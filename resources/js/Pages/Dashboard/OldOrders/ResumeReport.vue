@@ -56,7 +56,7 @@
                 </div>
 
                 <!-- Action -->
-                <div class="flex items-end">
+                <div class="flex items-end gap-2">
                     <button
                         type="submit"
                         class="w-full h-10 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-semibold transition-all flex items-center justify-center gap-2"
@@ -65,6 +65,15 @@
                         <IconFilter :size="18" />
                         <span>Filter</span>
                     </button>
+                    <a
+                        v-if="items.length > 0"
+                        :href="route('old-orders.resume-report-export-excel', { month: filter.month, year: filter.year, resume_status: filter.resume_status })"
+                        target="_blank"
+                        class="h-10 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold transition-all flex items-center justify-center gap-2 whitespace-nowrap shadow-lg shadow-emerald-500/20"
+                    >
+                        <IconFileSpreadsheet :size="18" />
+                        <span>Export Excel</span>
+                    </a>
                 </div>
             </form>
         </div>
@@ -228,6 +237,7 @@ import {
     IconFilter,
     IconDatabaseOff,
     IconX,
+    IconFileSpreadsheet,
 } from '@tabler/icons-vue';
 import { ref, reactive, computed } from 'vue';
 import axios from 'axios';
