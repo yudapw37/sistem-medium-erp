@@ -470,19 +470,17 @@ class OldOrderController extends Controller
         $filename = 'resume_order_' . $monthName . '_' . $year . '_' . date('His') . '.xlsx';
         $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($data);
 
-        // Ensure no output buffer is active
+        // Stream directly to browser (more reliable on shared hosting)
         while (ob_get_level()) {
             ob_end_clean();
         }
 
-        $exportPath = storage_path('app/exports');
-        if (!file_exists($exportPath)) {
-            mkdir($exportPath, 0777, true);
-        }
-        $tempPath = $exportPath . '/' . $filename;
-        $xlsx->saveAs($tempPath);
-
-        return response()->download($tempPath)->deleteFileAfterSend();
+        return response()->streamDownload(function () use ($xlsx) {
+            $xlsx->saveAs('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 
     /**
@@ -552,18 +550,16 @@ class OldOrderController extends Controller
         $filename = 'produk_resume_' . $monthName . '_' . $year . '_' . date('His') . '.xlsx';
         $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($data);
 
-        // Ensure no output buffer is active
+        // Stream directly to browser (more reliable on shared hosting)
         while (ob_get_level()) {
             ob_end_clean();
         }
 
-        $exportPath = storage_path('app/exports');
-        if (!file_exists($exportPath)) {
-            mkdir($exportPath, 0777, true);
-        }
-        $tempPath = $exportPath . '/' . $filename;
-        $xlsx->saveAs($tempPath);
-
-        return response()->download($tempPath)->deleteFileAfterSend();
+        return response()->streamDownload(function () use ($xlsx) {
+            $xlsx->saveAs('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 }
