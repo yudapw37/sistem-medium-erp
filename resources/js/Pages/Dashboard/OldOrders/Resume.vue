@@ -106,11 +106,11 @@
 
                 <!-- Expanded Detail -->
                 <transition
-                    enter-active-class="transition-all duration-300 ease-out"
+                    enter-active-class="transition-all duration-500 ease-out"
                     enter-from-class="max-h-0 opacity-0"
-                    enter-to-class="max-h-[2000px] opacity-100"
+                    enter-to-class="max-h-[9999px] opacity-100"
                     leave-active-class="transition-all duration-200 ease-in"
-                    leave-from-class="max-h-[2000px] opacity-100"
+                    leave-from-class="max-h-[9999px] opacity-100"
                     leave-to-class="max-h-0 opacity-0"
                 >
                     <div v-if="expandedMonth === index" class="border-t border-slate-200 dark:border-slate-800 overflow-hidden">
@@ -143,9 +143,9 @@
                                 </a>
                             </div>
 
-                            <div class="overflow-x-auto">
+                            <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
                                 <table class="w-full text-sm">
-                                    <thead>
+                                    <thead class="sticky top-0 z-10 bg-white dark:bg-slate-900">
                                         <tr class="border-b border-slate-200 dark:border-slate-700">
                                             <th class="text-left py-3 px-3 text-xs font-semibold text-slate-500 uppercase">Status</th>
                                             <th class="text-left py-3 px-3 text-xs font-semibold text-slate-500 uppercase">Code Order</th>
@@ -160,7 +160,7 @@
                                             v-for="order in filteredOrders"
                                             :key="order.id"
                                             class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                                            :class="{ 'opacity-50': !order.resume_status }"
+                                            :class="{ 'opacity-40 bg-red-50 dark:bg-red-900/10': !order.resume_status }"
                                         >
                                             <td class="py-3 px-3">
                                                 <label class="relative inline-flex items-center cursor-pointer">
@@ -201,6 +201,11 @@
                             </div>
                             <div v-else-if="expandedOrders.length === 0" class="text-center py-8 text-slate-400 text-sm">
                                 Tidak ada order di bulan ini.
+                            </div>
+                            <div v-if="expandedOrders.length > 0" class="mt-2 text-xs text-slate-400 text-right">
+                                Menampilkan {{ filteredOrders.length }} order
+                                ({{ expandedOrders.filter(o => o.resume_status).length }} aktif,
+                                {{ expandedOrders.filter(o => !o.resume_status).length }} non-aktif)
                             </div>
                         </div>
                     </div>

@@ -16,6 +16,7 @@
         "laravel/tinker": "^2.9",
         "shuchkin/simplexlsx": "^1.1",
         "shuchkin/simplexlsxgen": "^1.5",
+        "smalot/pdfparser": "^2.12",
         "spatie/laravel-permission": "^6.7",
         "tightenco/ziggy": "^2.0"
     },

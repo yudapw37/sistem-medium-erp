@@ -213,6 +213,32 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::get('/old-orders/{id}/print', [OldOrderController::class, 'print'])->middleware('permission:transactions-access')->name('old-orders.print');
     Route::get('/old-orders/{id}', [OldOrderController::class, 'show'])->middleware('permission:transactions-access')->name('old-orders.show');
 
+    // Resume & Reports
+    Route::get('/old-purchases/resume', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'resume'])
+        ->middleware('permission:transactions-access')->name('old-purchases.resume');
+    Route::get('/old-purchases/resume-detail/{year}/{month}', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'resumeDetail'])
+        ->middleware('permission:transactions-access')->name('old-purchases.resume-detail');
+    Route::put('/old-purchases/toggle-status/{id}', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'toggleResumeStatus'])
+        ->middleware('permission:transactions-access')->name('old-purchases.toggle-status');
+    Route::get('/old-purchases/resume-report', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'resumeReport'])
+        ->middleware('permission:transactions-access')->name('old-purchases.resume-report');
+
+    // Exports
+    Route::get('/old-purchases/export-resume/{year}/{month}', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'exportResumeExcel'])
+        ->middleware('permission:transactions-access')->name('old-purchases.export-resume');
+    Route::get('/old-purchases/export-products', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'exportProductResumeExcel'])
+        ->middleware('permission:transactions-access')->name('old-purchases.export-products');
+    Route::get('/old-purchases/export-yearly', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'exportYearlyReportExcel'])
+        ->middleware('permission:transactions-access')->name('old-purchases.export-yearly');
+
+    // Old Purchases (PDF Upload)
+    Route::get('/old-purchases', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'index'])->middleware('permission:transactions-access')->name('old-purchases.index');
+    Route::get('/old-purchases/upload', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'uploadForm'])->middleware('permission:transactions-access')->name('old-purchases.upload');
+    Route::post('/old-purchases/upload', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'upload'])->middleware('permission:transactions-access')->name('old-purchases.parse');
+    Route::post('/old-purchases/store', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'store'])->middleware('permission:transactions-access')->name('old-purchases.store');
+    Route::get('/old-purchases/{id}', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'show'])->middleware('permission:transactions-access')->name('old-purchases.show');
+    Route::delete('/old-purchases/{id}', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'destroy'])->middleware('permission:transactions-access')->name('old-purchases.destroy');
+
     // Sale Approval Routes
     Route::get('/approvals/finance', [SaleApprovalController::class, 'financeIndex'])
         ->middleware('permission:sales-approve-finance')

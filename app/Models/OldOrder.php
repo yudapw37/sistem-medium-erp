@@ -10,6 +10,11 @@ class OldOrder extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
+    // Prevent Laravel from auto-updating created_at on save()
+    // This is critical: old_order uses created_at for monthly grouping,
+    // so it must never change after initial insert.
+    const CREATED_AT = null;
+
     protected $fillable = [
         'code_customer',
         'nama_pengirim',
