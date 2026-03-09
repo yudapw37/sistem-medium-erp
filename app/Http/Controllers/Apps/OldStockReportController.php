@@ -20,6 +20,67 @@ class OldStockReportController extends Controller
         $year = (int) ($request->year ?? date('Y'));
         $month = (int) ($request->month ?? date('n'));
 
+        $reportData = $this->getMonthlyReportData($year, $month);
+
+        return Inertia::render('Dashboard/OldStock/MonthlyReport', [
+            'report'  => $reportData['data']->values(),
+            'totals'  => $reportData['totals'],
+            'filters' => ['year' => $year, 'month' => $month],
+        ]);
+    }
+
+    public function monthlyReportExport(Request $request)
+    {
+        $year = (int) ($request->year ?? date('Y'));
+        $month = (int) ($request->month ?? date('n'));
+
+        $reportData = $this->getMonthlyReportData($year, $month);
+        $data = $reportData['data'];
+        $totals = $reportData['totals'];
+
+        $monthNames = [
+            '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+
+        $exportData = [
+            ['LAPORAN PERSEDIAAN BULANAN'],
+            ['Periode:', $monthNames[$month] . ' ' . $year],
+            [''],
+            ['No', 'Kode Barang', 'Nama Barang', 'Stock Awal', 'Masuk', 'Keluar', 'Stock Akhir']
+        ];
+
+        foreach ($data as $idx => $item) {
+            $exportData[] = [
+                $idx + 1,
+                $item->code_barang,
+                $item->nama_barang,
+                $item->stock_awal,
+                $item->stock_masuk,
+                $item->stock_keluar,
+                $item->stock_akhir
+            ];
+        }
+
+        $exportData[] = [''];
+        $exportData[] = [
+            '', '', 'TOTAL',
+            $totals['stock_awal'],
+            $totals['stock_masuk'],
+            $totals['stock_keluar'],
+            $totals['stock_akhir']
+        ];
+
+        $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($exportData);
+        $filename = "Laporan_Persediaan_{$year}_{$month}.xlsx";
+
+        return response()->streamDownload(function () use ($xlsx) {
+            $xlsx->download();
+        }, $filename);
+    }
+
+    private function getMonthlyReportData(int $year, int $month)
+    {
         $startOfMonth = sprintf('%04d-%02d-01', $year, $month);
         $endOfMonth = date('Y-m-t', strtotime($startOfMonth));
 
@@ -36,11 +97,10 @@ class OldStockReportController extends Controller
         $allCodes = $codes1->merge($codes2)->merge($codes3)->merge($codes4)->unique()->filter()->values();
 
         if ($allCodes->isEmpty()) {
-            return Inertia::render('Dashboard/OldStock/MonthlyReport', [
-                'report' => [],
-                'totals' => ['stock_awal' => 0, 'stock_masuk' => 0, 'stock_keluar' => 0, 'stock_akhir' => 0],
-                'filters' => ['year' => $year, 'month' => $month],
-            ]);
+            return [
+                'data' => collect([]),
+                'totals' => ['stock_awal' => 0, 'stock_masuk' => 0, 'stock_keluar' => 0, 'stock_akhir' => 0]
+            ];
         }
 
         // Step 2: Pre-aggregate stock masuk (purchase aktif, by pa.tanggal_faktur)
@@ -129,10 +189,9 @@ class OldStockReportController extends Controller
             'stock_akhir'  => $data->sum('stock_akhir'),
         ];
 
-        return Inertia::render('Dashboard/OldStock/MonthlyReport', [
-            'report'  => $data->values(),
-            'totals'  => $totals,
-            'filters' => ['year' => $year, 'month' => $month],
-        ]);
+        return [
+            'data'   => $data,
+            'totals' => $totals
+        ];
     }
 }

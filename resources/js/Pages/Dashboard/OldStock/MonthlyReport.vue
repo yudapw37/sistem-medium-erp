@@ -49,6 +49,15 @@
                     </button>
                 </div>
 
+                <!-- Export Button -->
+                <button
+                    @click="exportExcel"
+                    class="h-10 px-4 flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-all shadow-lg shadow-emerald-600/20"
+                >
+                    <IconFileSpreadsheet :size="18" />
+                    <span>Export Excel</span>
+                </button>
+
                 <!-- Info -->
                 <div class="ml-auto text-sm text-slate-500">
                     <span class="font-bold text-slate-800 dark:text-white">{{ report.length }}</span> barang
@@ -176,6 +185,7 @@ import {
     IconChevronLeft,
     IconChevronRight,
     IconDatabaseOff,
+    IconFileSpreadsheet,
     IconInfoCircle,
     IconSearch,
 } from '@tabler/icons-vue';
@@ -230,13 +240,14 @@ const prevMonth = () => {
 };
 
 const nextMonth = () => {
-    if (selectedMonth.value >= 12) {
-        selectedMonth.value = 1;
-        selectedYear.value++;
-    } else {
-        selectedMonth.value++;
-    }
     navigate();
+};
+
+const exportExcel = () => {
+    window.location.href = route('old-stock-report.monthly.export', {
+        year: selectedYear.value,
+        month: selectedMonth.value,
+    });
 };
 
 const formatNumber = (value) => {
