@@ -130,10 +130,18 @@
                                         </thead>
                                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                                             <tr v-for="(item, iIdx) in purchase.items" :key="iIdx">
-                                                <td class="p-3 text-slate-800 dark:text-slate-300 leading-relaxed font-medium">{{ item.nama }}</td>
-                                                <td class="p-3 text-center text-slate-600 dark:text-slate-400 font-bold bg-slate-50/30 dark:bg-slate-800/20">{{ item.qty }}</td>
-                                                <td class="p-3 text-right text-slate-600 dark:text-slate-400">{{ formatCurrency(item.harga_satuan) }}</td>
-                                                <td class="p-3 text-right font-bold text-slate-900 dark:text-white">{{ formatCurrency(item.total) }}</td>
+                                                <td class="p-3 text-slate-800 dark:text-slate-300 leading-relaxed font-medium">
+                                                    {{ item.nama }}
+                                                </td>
+                                                <td class="p-3 text-center text-slate-600 dark:text-slate-400 font-bold bg-slate-50/30 dark:bg-slate-800/20">
+                                                    {{ item.qty }}
+                                                </td>
+                                                <td class="p-3 text-right text-slate-600 dark:text-slate-400">
+                                                    {{ formatCurrency(item.harga_satuan) }}
+                                                </td>
+                                                <td class="p-3 text-right font-bold text-slate-900 dark:text-white">
+                                                    {{ formatCurrency(item.total) }}
+                                                </td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -183,6 +191,8 @@ import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
+const props = defineProps({});
+
 const selectedFile = ref(null);
 const isDragging = ref(false);
 const isParsing = ref(false);
@@ -211,7 +221,7 @@ const handleDrop = (e) => {
 
 const uploadAndParse = async () => {
     if (!selectedFile.value) return;
-    
+
     isParsing.value = true;
     const formData = new FormData();
     formData.append('file', selectedFile.value);
@@ -235,7 +245,17 @@ const uploadAndParse = async () => {
         });
     } catch (error) {
         console.error('Error parsing PDF:', error);
-        Swal.fire('Error', 'Gagal mengekstrak data PDF. Periksa format file.', 'error');
+        // Check if it's a duplicate error
+        if (error.response && error.response.data && error.response.data.error === 'duplicate') {
+            Swal.fire({
+                title: 'Faktur Sudah Ada!',
+                text: error.response.data.message,
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+        } else {
+            Swal.fire('Error', 'Gagal mengekstrak data PDF. Periksa format file.', 'error');
+        }
     } finally {
         isParsing.value = false;
     }
@@ -243,7 +263,7 @@ const uploadAndParse = async () => {
 
 const saveParsedData = async () => {
     if (parsedData.value.length === 0) return;
-    
+
     isStoring.value = true;
     try {
         await router.post(route('old-purchases.store'), {
@@ -252,7 +272,17 @@ const saveParsedData = async () => {
         });
     } catch (error) {
         console.error('Error storing data:', error);
-        Swal.fire('Error', 'Gagal menyimpan data ke database.', 'error');
+        // Check if it's a duplicate error
+        if (error.response && error.response.data && error.response.data.error === 'duplicate') {
+            Swal.fire({
+                title: 'Faktur Sudah Ada!',
+                text: error.response.data.message,
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+        } else {
+            Swal.fire('Error', 'Gagal menyimpan data ke database.', 'error');
+        }
         isStoring.value = false;
     }
 };

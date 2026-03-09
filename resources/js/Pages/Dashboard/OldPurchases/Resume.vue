@@ -123,6 +123,17 @@
                                         <IconFileSpreadsheet :size="18" />
                                         Export Excel
                                     </a>
+                                    <button
+                                        @click.stop="syncToAktif(item, index)"
+                                        :disabled="syncingMonth !== null"
+                                        class="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold shadow-lg transition-all"
+                                        :class="syncingMonth === index
+                                            ? 'bg-blue-400 cursor-wait shadow-blue-400/20'
+                                            : 'bg-blue-500 hover:bg-blue-600 shadow-blue-500/20'"
+                                    >
+                                        <IconRefresh :size="18" :class="{ 'animate-spin': syncingMonth === index }" />
+                                        {{ syncingMonth === index ? 'Syncing...' : 'Sync ke Aktif' }}
+                                    </button>
                                 </div>
                             </div>
 
@@ -130,6 +141,7 @@
                                 <table class="w-full text-sm">
                                     <thead>
                                         <tr class="border-b border-slate-200 dark:border-slate-700">
+                                            <th class="text-left py-3 px-3 text-xs font-semibold text-slate-500 uppercase w-8"></th>
                                             <th class="text-left py-3 px-3 text-xs font-semibold text-slate-500 uppercase">Status</th>
                                             <th class="text-left py-3 px-3 text-xs font-semibold text-slate-500 uppercase">No Faktur</th>
                                             <th class="text-left py-3 px-3 text-xs font-semibold text-slate-500 uppercase">Supplier</th>
@@ -138,33 +150,81 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr
-                                            v-for="purchase in filteredPurchases"
-                                            :key="purchase.id"
-                                            class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                                            :class="{ 'opacity-40': !purchase.resume_status }"
-                                        >
-                                            <td class="py-3 px-3">
-                                                <label class="relative inline-flex items-center cursor-pointer">
-                                                    <input
-                                                        type="checkbox"
-                                                        :checked="purchase.resume_status"
-                                                        @change="toggleStatus(purchase, index)"
-                                                        class="sr-only peer"
-                                                        :disabled="togglingId === purchase.id"
-                                                    />
-                                                    <div class="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500 transition-colors"></div>
-                                                </label>
-                                            </td>
-                                            <td class="py-3 px-3 font-medium">{{ purchase.nomor_faktur || '-' }}</td>
-                                            <td class="py-3 px-3">{{ purchase.supplier }}</td>
-                                            <td class="py-3 px-3 text-right font-bold text-slate-900 dark:text-white">
-                                                {{ formatCurrency(purchase.harga_total) }}
-                                            </td>
-                                            <td class="py-3 px-3 text-slate-500">
-                                                {{ formatDate(purchase.tanggal_faktur) }}
-                                            </td>
-                                        </tr>
+                                        <template v-for="purchase in filteredPurchases" :key="purchase.id">
+                                            <!-- Purchase Row -->
+                                            <tr
+                                                class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer"
+                                                :class="{ 'opacity-40': !purchase.resume_status, 'bg-primary-50/50 dark:bg-primary-900/10': expandedPurchaseId === purchase.id }"
+                                                @click="togglePurchaseDetail(purchase.id)"
+                                            >
+                                                <td class="py-3 px-3">
+                                                    <IconChevronRight :size="16" class="text-slate-400 transition-transform duration-200"
+                                                        :class="{ 'rotate-90': expandedPurchaseId === purchase.id }" />
+                                                </td>
+                                                <td class="py-3 px-3" @click.stop>
+                                                    <label class="relative inline-flex items-center cursor-pointer">
+                                                        <input
+                                                            type="checkbox"
+                                                            :checked="purchase.resume_status"
+                                                            @change="toggleStatus(purchase, index)"
+                                                            class="sr-only peer"
+                                                            :disabled="togglingId === purchase.id"
+                                                        />
+                                                        <div class="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500 transition-colors"></div>
+                                                    </label>
+                                                </td>
+                                                <td class="py-3 px-3 font-medium">{{ purchase.nomor_faktur || '-' }}</td>
+                                                <td class="py-3 px-3">{{ purchase.supplier }}</td>
+                                                <td class="py-3 px-3 text-right font-bold text-slate-900 dark:text-white">
+                                                    {{ formatCurrency(purchase.harga_total) }}
+                                                </td>
+                                                <td class="py-3 px-3 text-slate-500">
+                                                    {{ formatDate(purchase.tanggal_faktur) }}
+                                                </td>
+                                            </tr>
+                                            <!-- Detail Items Row -->
+                                            <tr v-if="expandedPurchaseId === purchase.id">
+                                                <td colspan="6" class="p-0">
+                                                    <div class="bg-slate-50 dark:bg-slate-800/40 px-6 py-3 border-b border-slate-200 dark:border-slate-700">
+                                                        <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                                            <IconBox :size="14" /> Detail Barang ({{ purchase.details?.length || 0 }} item)
+                                                        </div>
+                                                        <table class="w-full text-xs" v-if="purchase.details?.length > 0">
+                                                            <thead>
+                                                                <tr class="border-b border-slate-200 dark:border-slate-700">
+                                                                    <th class="text-left py-2 px-2 font-semibold text-slate-400 uppercase w-8">No</th>
+                                                                    <th class="text-left py-2 px-2 font-semibold text-slate-400 uppercase">Nama Barang</th>
+                                                                    <th class="text-left py-2 px-2 font-semibold text-slate-400 uppercase">Kode Barang</th>
+                                                                    <th class="text-right py-2 px-2 font-semibold text-slate-400 uppercase">Qty</th>
+                                                                    <th class="text-right py-2 px-2 font-semibold text-slate-400 uppercase">Harga Satuan</th>
+                                                                    <th class="text-right py-2 px-2 font-semibold text-slate-400 uppercase">Total</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <tr v-for="(detail, dIdx) in purchase.details" :key="detail.id"
+                                                                    class="border-b border-slate-100 dark:border-slate-700/50"
+                                                                    :class="dIdx % 2 === 0 ? 'bg-white dark:bg-slate-800/20' : 'bg-slate-50/50 dark:bg-slate-800/40'">
+                                                                    <td class="py-2 px-2 text-slate-400">{{ dIdx + 1 }}</td>
+                                                                    <td class="py-2 px-2 text-slate-800 dark:text-slate-200 font-medium">{{ detail.nama }}</td>
+                                                                    <td class="py-2 px-2">
+                                                                        <span v-if="detail.code_barang" class="font-mono text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded">
+                                                                            {{ detail.code_barang }}
+                                                                        </span>
+                                                                        <span v-else class="text-slate-300 dark:text-slate-600 italic">belum mapping</span>
+                                                                    </td>
+                                                                    <td class="py-2 px-2 text-right font-bold text-slate-900 dark:text-white">{{ formatNumber(detail.qty) }}</td>
+                                                                    <td class="py-2 px-2 text-right text-slate-600 dark:text-slate-400">{{ formatCurrency(detail.harga_satuan) }}</td>
+                                                                    <td class="py-2 px-2 text-right font-bold text-slate-900 dark:text-white">{{ formatCurrency(detail.total) }}</td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                        <div v-else class="text-center py-4 text-slate-400 text-xs">
+                                                            Tidak ada detail barang.
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </template>
                                     </tbody>
                                 </table>
                             </div>
@@ -189,11 +249,14 @@ import axios from 'axios';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import {
     IconCalendar,
+    IconBox,
     IconChevronDown,
+    IconChevronRight,
     IconCircleCheck,
     IconDatabaseOff,
     IconSearch,
-    IconFileSpreadsheet
+    IconFileSpreadsheet,
+    IconRefresh
 } from '@tabler/icons-vue';
 
 const props = defineProps({
@@ -206,6 +269,13 @@ const expandedPurchases = ref([]);
 const loadingDetail = ref(false);
 const togglingId = ref(null);
 const searchQuery = ref('');
+const syncingMonth = ref(null);
+const syncResult = ref(null);
+const expandedPurchaseId = ref(null);
+
+const togglePurchaseDetail = (id) => {
+    expandedPurchaseId.value = expandedPurchaseId.value === id ? null : id;
+};
 
 const monthNames = [
     '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -264,4 +334,24 @@ const formatNumber = (val) => new Intl.NumberFormat('id-ID').format(val || 0);
 const formatDate = (date) => date ? new Date(date).toLocaleDateString('id-ID') : '-';
 
 const route = (name, params) => window.route(name, params);
+
+const syncToAktif = async (item, index) => {
+    if (syncingMonth.value !== null) return;
+    if (!confirm(`Yakin ingin sync semua pembelian AKTIF di ${getMonthName(item.month)} ${item.year} ke Purchase Aktif?`)) return;
+    syncingMonth.value = index;
+    try {
+        const res = await axios.post(route('old-purchases.sync-month', { year: item.year, month: item.month }));
+        syncResult.value = res.data;
+        let msg = `Sync selesai! ${res.data.added} ditambahkan, ${res.data.removed} dihapus.`;
+        if (res.data.skipped?.length > 0) {
+            msg += `\n\n⚠️ ${res.data.skipped.length} purchase dilewati karena ada detail tanpa kode barang:\n- ${res.data.skipped.join('\n- ')}`;
+        }
+        alert(msg);
+    } catch (e) {
+        console.error(e);
+        alert('Gagal sync: ' + (e.response?.data?.message || e.message));
+    } finally {
+        syncingMonth.value = null;
+    }
+};
 </script>

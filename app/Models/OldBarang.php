@@ -11,5 +11,5 @@ class OldBarang extends Model
     protected $keyType = 'string';
     public $timestamps = false;
 
-    protected $fillable = ['judul_buku'];
+    protected $fillable = ['id', 'judul_buku', 'kategori', 'barcode'];
 }

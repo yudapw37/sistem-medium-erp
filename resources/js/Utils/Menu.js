@@ -3,6 +3,8 @@ import {
     IconBooks,
     IconBox,
     IconCategory,
+    IconCheck,
+    IconRefresh,
     IconChartArrowsVertical,
     IconChartBarPopular,
     IconChartInfographic,
@@ -51,6 +53,7 @@ import {
     IconReceiptTax,
     IconRuler2,
     IconAdjustments,
+    IconHelp,
 } from '@tabler/icons-vue';
 import hasAnyPermission from './Permission';
 
@@ -508,6 +511,11 @@ export default function useMenu() {
                     icon: IconClockHour6,
                     permissions: hasAnyPermission(['transactions-access']),
                 },
+            ],
+        },
+        {
+            title: 'Old Transactions',
+            details: [
                 {
                     title: 'Old Order',
                     icon: IconReceiptTax,
@@ -542,6 +550,27 @@ export default function useMenu() {
                             permissions: hasAnyPermission(['transactions-access']),
                         },
                         {
+                            title: 'Resume Order Aktif',
+                            href: route('old-orders-aktif.resume'),
+                            active: url.startsWith('/dashboard/old-orders-aktif'),
+                            icon: IconCheck,
+                            permissions: hasAnyPermission(['transactions-access']),
+                        },
+                    ]
+                },
+                {
+                    title: 'Old Purchase',
+                    icon: IconReceiptTax,
+                    permissions: hasAnyPermission(['transactions-access']),
+                    subdetails: [
+                        {
+                            title: 'Old Purchase',
+                            href: route('old-purchases.index'),
+                            active: url.startsWith('/dashboard/old-purchases') && !url.includes('resume') && !url.includes('aktif'),
+                            icon: IconFileDescription,
+                            permissions: hasAnyPermission(['transactions-access']),
+                        },
+                        {
                             title: 'Resume old purchase',
                             href: route('old-purchases.resume'),
                             active: url.startsWith('/dashboard/old-purchases/resume'),
@@ -556,13 +585,69 @@ export default function useMenu() {
                             permissions: hasAnyPermission(['transactions-access']),
                         },
                         {
-                            title: 'Old Purchase',
-                            href: route('old-purchases.index'),
-                            active: url.startsWith('/dashboard/old-purchases') && !url.includes('resume'),
-                            icon: IconFileDescription,
+                            title: 'Resume Purchase Aktif',
+                            href: route('old-purchases-aktif.resume'),
+                            active: url.startsWith('/dashboard/old-purchases-aktif'),
+                            icon: IconCheck,
                             permissions: hasAnyPermission(['transactions-access']),
                         },
-                    ],
+                    ]
+                },
+                {
+                    title: 'Master Data',
+                    icon: IconReceiptTax,
+                    permissions: hasAnyPermission(['transactions-access']),
+                    subdetails: [
+                        {
+                            title: 'Old Barang',
+                            href: route('old-barang-master.index'),
+                            active: url.startsWith('/dashboard/old-barang-master'),
+                            icon: IconBox,
+                            permissions: hasAnyPermission(['transactions-access']),
+                        },
+                        {
+                            title: 'Old Barang Purchase',
+                            href: route('old-barang-purchase.index'),
+                            active: url.startsWith('/dashboard/old-barang-purchase'),
+                            icon: IconShoppingCart,
+                            permissions: hasAnyPermission(['transactions-access']),
+                        },
+                    ]
+                },
+                {
+                    title: 'Old Stock',
+                    icon: IconReceiptTax,
+                    permissions: hasAnyPermission(['transactions-access']),
+                    subdetails: [
+                        {
+                            title: 'Stock Awal',
+                            href: route('stock-awal.index'),
+                            active: url.startsWith('/dashboard/stock-awal'),
+                            icon: IconPackage,
+                            permissions: hasAnyPermission(['transactions-access']),
+                        },
+                        {
+                            title: 'Stock Running',
+                            href: route('stock-running.index'),
+                            active: url.startsWith('/dashboard/stock-running'),
+                            icon: IconRefresh,
+                            permissions: hasAnyPermission(['transactions-access']),
+                        },
+                        {
+                            title: 'Lap. Persediaan',
+                            href: route('old-stock-report.monthly'),
+                            active: url.startsWith('/dashboard/old-stock-report'),
+                            icon: IconChartBarPopular,
+                            permissions: hasAnyPermission(['transactions-access']),
+                        },
+                    ]
+                },
+                {
+                    title: 'Helpdesk',
+                    href: route('helpdesk.index'),
+                    active: url.startsWith('/dashboard/helpdesk'),
+                    icon: IconHelp,
+                    permissions: true,
                 },
             ],
         },
@@ -656,6 +741,18 @@ export default function useMenu() {
                 },
             ],
         },
+        // {
+        // title: 'Informasi',
+        // details: [
+        // {
+        // title: 'Helpdesk',
+        // href: route('helpdesk.index'),
+        // active: url.startsWith('/dashboard/helpdesk'),
+        // icon: IconHelp,
+        // permissions: true,
+        // },
+        // ],
+        // },
     ];
 
     return menuNavigation;

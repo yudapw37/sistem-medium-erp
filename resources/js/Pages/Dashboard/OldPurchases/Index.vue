@@ -140,8 +140,9 @@ import {
     IconDatabaseOff,
     IconPlus,
     IconTruck,
-    IconTrash
+    IconTrash,
 } from '@tabler/icons-vue';
+import axios from 'axios';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import Search from '@/Components/Dashboard/Search.vue';
 import Table from '@/Components/Dashboard/Table.vue';

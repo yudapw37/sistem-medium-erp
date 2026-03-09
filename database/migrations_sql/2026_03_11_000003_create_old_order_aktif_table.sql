@@ -1,0 +1,25 @@
+-- Create old_order_aktif table
+CREATE TABLE IF NOT EXISTS old_order_aktif (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    old_order_id BIGINT UNSIGNED NULL,
+    code_customer VARCHAR(255) NULL,
+    nama_pengirim VARCHAR(255) NULL,
+    telephone_pengirim VARCHAR(255) NULL,
+    nama_penerima VARCHAR(255) NULL,
+    telephone_penerima VARCHAR(255) NULL,
+    alamat TEXT NULL,
+    kecamatan VARCHAR(255) NULL,
+    kab_kota VARCHAR(255) NULL,
+    total_barang INT DEFAULT 0,
+    total_harga DECIMAL(15,2) DEFAULT 0,
+    total_diskon DECIMAL(15,2) DEFAULT 0,
+    diskon_kode_unik DECIMAL(15,2) DEFAULT 0,
+    biaya_expedisi DECIMAL(15,2) DEFAULT 0,
+    is_final TINYINT(1) DEFAULT 0,
+    final_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (old_order_id) REFERENCES old_order(id) ON DELETE SET NULL,
+    INDEX idx_code_customer (code_customer),
+    INDEX idx_is_final (is_final)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

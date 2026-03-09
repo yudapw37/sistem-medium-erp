@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Apps;
 
 use App\Http\Controllers\Controller;
 use App\Models\OldOrder;
+use App\Models\OldOrderAktif;
+use App\Models\OldOrderAktifDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -14,28 +16,58 @@ class OldOrderController extends Controller
     /**
      * Resume: monthly summary of old orders.
      */
-    public function resume()
+    public function resume(Request $request)
     {
+        // Available years
+        $availableYears = DB::table('old_order')
+            ->selectRaw('DISTINCT YEAR(created_at) as year')
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+
+        $year = (int) ($request->year ?? date('Y'));
+        $semester = (int) ($request->semester ?? (date('n') <= 6 ? 1 : 2));
+
+        // Semester 1 = Jan-Jun, Semester 2 = Jul-Dec
+        $startMonth = $semester === 1 ? 1 : 7;
+        $endMonth = $semester === 1 ? 6 : 12;
+
         $months = DB::table('old_order')
             ->select(
                 DB::raw('YEAR(created_at) as year'),
                 DB::raw('MONTH(created_at) as month'),
-                // All statuses
                 DB::raw('COUNT(*) as total_orders'),
                 DB::raw('SUM(total_barang) as total_barang'),
                 DB::raw('SUM(total_harga + COALESCE(biayaExpedisi, 0) - COALESCE(totalDiskon, 0) - COALESCE(diskonKodeUnik, 0)) as total_nominal'),
-                // Only resume_status = true
                 DB::raw('SUM(CASE WHEN resume_status = 1 THEN 1 ELSE 0 END) as true_orders'),
                 DB::raw('SUM(CASE WHEN resume_status = 1 THEN total_barang ELSE 0 END) as true_barang'),
                 DB::raw('SUM(CASE WHEN resume_status = 1 THEN (total_harga + COALESCE(biayaExpedisi, 0) - COALESCE(totalDiskon, 0) - COALESCE(diskonKodeUnik, 0)) ELSE 0 END) as true_nominal')
             )
+            ->whereYear('created_at', $year)
+            ->whereRaw('MONTH(created_at) BETWEEN ? AND ?', [$startMonth, $endMonth])
             ->groupBy(DB::raw('YEAR(created_at)'), DB::raw('MONTH(created_at)'))
-            ->orderBy('year', 'desc')
             ->orderBy('month', 'desc')
             ->get();
 
+        // Check sync status per month (count synced & final)
+        foreach ($months as $m) {
+            $syncInfo = DB::table('old_order_aktif')
+                ->join('old_order', 'old_order_aktif.old_order_id', '=', 'old_order.id')
+                ->whereYear('old_order.created_at', $m->year)
+                ->whereMonth('old_order.created_at', $m->month)
+                ->selectRaw('COUNT(*) as synced_count, SUM(CASE WHEN old_order_aktif.is_final = 1 THEN 1 ELSE 0 END) as final_count')
+                ->first();
+            $m->synced_count = (int) ($syncInfo->synced_count ?? 0);
+            $m->final_count = (int) ($syncInfo->final_count ?? 0);
+        }
+
         return Inertia::render('Dashboard/OldOrders/Resume', [
             'months' => $months,
+            'availableYears' => $availableYears,
+            'filters' => [
+                'year' => $year,
+                'semester' => $semester,
+            ],
         ]);
     }
 
@@ -165,6 +197,122 @@ class OldOrderController extends Controller
         return response()->json([
             'order' => $order,
             'summary' => $summary,
+        ]);
+    }
+
+    /**
+     * Bulk toggle resume_status for all orders in a specific month.
+     */
+    public function bulkToggleResumeStatus(Request $request, $year, $month)
+    {
+        $newStatus = $request->boolean('resume_status');
+
+        $updated = OldOrder::whereYear('created_at', $year)
+            ->whereMonth('created_at', $month)
+            ->update(['resume_status' => $newStatus]);
+
+        $summary = DB::table('old_order')
+            ->select(
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw('SUM(total_barang) as total_barang'),
+                DB::raw('SUM(total_harga + COALESCE(biayaExpedisi, 0) - COALESCE(totalDiskon, 0) - COALESCE(diskonKodeUnik, 0)) as total_nominal'),
+                DB::raw('SUM(CASE WHEN resume_status = 1 THEN 1 ELSE 0 END) as true_orders'),
+                DB::raw('SUM(CASE WHEN resume_status = 1 THEN total_barang ELSE 0 END) as true_barang'),
+                DB::raw('SUM(CASE WHEN resume_status = 1 THEN (total_harga + COALESCE(biayaExpedisi, 0) - COALESCE(totalDiskon, 0) - COALESCE(diskonKodeUnik, 0)) ELSE 0 END) as true_nominal')
+            )
+            ->whereYear('created_at', $year)
+            ->whereMonth('created_at', $month)
+            ->first();
+
+        return response()->json([
+            'updated' => $updated,
+            'summary' => $summary,
+        ]);
+    }
+
+    /**
+     * Sync active orders for a specific month to old_order_aktif.
+     * Also removes non-final orders that are no longer active.
+     */
+    public function syncMonth($year, $month)
+    {
+        $added = 0;
+        $removed = 0;
+
+        DB::transaction(function () use ($year, $month, &$added, &$removed) {
+            // 1. ADD: active orders not yet in old_order_aktif
+            $ordersToAdd = OldOrder::with('details')
+                ->where('resume_status', true)
+                ->whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->whereDoesntHave('aktif')
+                ->get();
+
+            foreach ($ordersToAdd as $order) {
+                $aktif = OldOrderAktif::create([
+                    'old_order_id'    => $order->id,
+                    'code_customer'   => $order->code_customer,
+                    'nama_pengirim'   => $order->nama_pengirim,
+                    'telephone_pengirim' => $order->telephone_pengirim,
+                    'nama_penerima'   => $order->nama_penerima,
+                    'telephone_penerima' => $order->telephone_penerima,
+                    'alamat'          => $order->alamat,
+                    'kecamatan'       => $order->kecamatan,
+                    'kab_kota'        => $order->kab_kota,
+                    'total_barang'    => $order->total_barang,
+                    'total_harga'     => $order->total_harga,
+                    'total_diskon'    => $order->totalDiskon,
+                    'diskon_kode_unik' => $order->diskonKodeUnik,
+                    'biaya_expedisi'  => $order->biayaExpedisi,
+                    'is_final'        => false,
+                ]);
+
+                foreach ($order->details as $detail) {
+                    OldOrderAktifDetail::create([
+                        'old_order_aktif_id' => $aktif->id,
+                        'code_order'  => $detail->code_order,
+                        'code_barang' => $detail->code_barang,
+                        'nama_promo'  => $detail->nama_promo,
+                        'jumlah'      => $detail->jumlah,
+                        'harga'       => $detail->harga,
+                        'harga_promo' => $detail->harga_promo,
+                        'diskon'      => $detail->diskon,
+                    ]);
+                }
+
+                $added++;
+            }
+
+            // 2. REMOVE: orders in old_order_aktif that are no longer active (resume_status = false)
+            //    but only if NOT final (is_final = false)
+            $toRemove = OldOrderAktif::where('is_final', false)
+                ->whereHas('oldOrder', function ($q) use ($year, $month) {
+                    $q->where('resume_status', false)
+                      ->whereYear('created_at', $year)
+                      ->whereMonth('created_at', $month);
+                })
+                ->get();
+
+            foreach ($toRemove as $aktif) {
+                $aktif->details()->delete();
+                $aktif->delete();
+                $removed++;
+            }
+        });
+
+        // Return updated sync info
+        $syncInfo = DB::table('old_order_aktif')
+            ->join('old_order', 'old_order_aktif.old_order_id', '=', 'old_order.id')
+            ->whereYear('old_order.created_at', $year)
+            ->whereMonth('old_order.created_at', $month)
+            ->selectRaw('COUNT(*) as synced_count, SUM(CASE WHEN old_order_aktif.is_final = 1 THEN 1 ELSE 0 END) as final_count')
+            ->first();
+
+        return response()->json([
+            'added'        => $added,
+            'removed'      => $removed,
+            'synced_count' => (int) ($syncInfo->synced_count ?? 0),
+            'final_count'  => (int) ($syncInfo->final_count ?? 0),
         ]);
     }
 

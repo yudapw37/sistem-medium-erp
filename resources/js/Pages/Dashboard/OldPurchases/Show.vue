@@ -71,6 +71,7 @@
                         <TableThead>
                             <tr>
                                 <TableTh class="w-10">No</TableTh>
+                                <TableTh>Kode Barang</TableTh>
                                 <TableTh>Nama Barang</TableTh>
                                 <TableTh class="text-center">Qty</TableTh>
                                 <TableTh class="text-right">Harga Satuan</TableTh>
@@ -84,6 +85,20 @@
                                 class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                             >
                                 <TableTd class="text-center">{{ ++i }}</TableTd>
+                                <TableTd>
+                                    <span
+                                        v-if="detail.code_barang"
+                                        class="px-2 py-1 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-mono font-bold text-xs"
+                                    >
+                                        {{ detail.code_barang }}
+                                    </span>
+                                    <span
+                                        v-else
+                                        class="px-2 py-1 rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium text-xs"
+                                    >
+                                        Belum Mapping
+                                    </span>
+                                </TableTd>
                                 <TableTd>
                                     <span class="text-slate-800 dark:text-slate-200 font-medium">
                                         {{ detail.nama }}
@@ -104,7 +119,7 @@
                         </TableTbody>
                         <tfoot>
                             <tr class="bg-slate-50 dark:bg-slate-800/50">
-                                <td colspan="4" class="p-4 text-right font-bold text-slate-500 uppercase tracking-wider text-xs">Total Harga Jual</td>
+                                <td colspan="5" class="p-4 text-right font-bold text-slate-500 uppercase tracking-wider text-xs">Total Harga Jual</td>
                                 <td class="p-4 text-right font-black text-slate-900 dark:text-white underline decoration-primary-500/50 underline-offset-4">
                                     {{ formatCurrency(oldPurchase.subtotal) }}
                                 </td>

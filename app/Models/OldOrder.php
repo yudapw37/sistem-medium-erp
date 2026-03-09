@@ -33,6 +33,7 @@ class OldOrder extends Model
     ];
 
     protected $casts = [
+        'created_at' => 'datetime',
         'total_barang' => 'integer',
         'total_harga' => 'decimal:2',
         'totalDiskon' => 'decimal:2',
@@ -49,5 +50,10 @@ class OldOrder extends Model
     public function details()
     {
         return $this->hasMany(OldOrderDetail::class, 'code_order', 'id');
+    }
+
+    public function aktif()
+    {
+        return $this->hasOne(OldOrderAktif::class, 'old_order_id');
     }
 }

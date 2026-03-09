@@ -11,6 +11,7 @@ class OldPurchaseDetail extends Model
 
     protected $fillable = [
         'old_purchase_id',
+        'code_barang',
         'nama',
         'qty',
         'harga_satuan',
@@ -22,6 +23,11 @@ class OldPurchaseDetail extends Model
         'harga_satuan' => 'decimal:2',
         'total' => 'decimal:2',
     ];
+
+    public function barang()
+    {
+        return $this->belongsTo(OldBarang::class, 'code_barang', 'id');
+    }
 
     public function purchase()
     {

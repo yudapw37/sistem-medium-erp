@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Apps;
 use App\Http\Controllers\Controller;
 use App\Models\OldPurchase;
 use App\Models\OldPurchaseDetail;
+use App\Models\OldPurchaseAktif;
+use App\Models\OldPurchaseAktifDetail;
+use App\Models\OldBarang;
+use App\Models\OldStockRunning;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Shuchkin\SimpleXLSXGen;
@@ -49,6 +53,18 @@ class OldPurchaseController extends Controller
             // Nomor Faktur
             preg_match('/Kode dan Nomor Seri Faktur Pajak : ([\d\.-]+)/', $text, $matches);
             $nomorFaktur = $matches[1] ?? null;
+
+            // Check if nomor_faktur already exists in database
+            if ($nomorFaktur) {
+                $exists = OldPurchase::where('nomor_faktur', $nomorFaktur)->exists();
+                if ($exists) {
+                    return response()->json([
+                        'error' => 'duplicate',
+                        'message' => 'Nomor faktur "' . $nomorFaktur . '" sudah pernah diimport.',
+                        'nomor_faktur' => $nomorFaktur
+                    ], 422);
+                }
+            }
 
             // Supplier
             // Usually Macanan Jaya is the seller
@@ -156,8 +172,27 @@ class OldPurchaseController extends Controller
     {
         $request->validate([
             'purchases' => 'required|array',
-            'filename' => 'required|string'
+            'filename' => 'required|string',
+            'purchases.*.items' => 'required|array',
+            'purchases.*.items.*.nama' => 'required|string',
+            'purchases.*.items.*.qty' => 'required|integer',
+            'purchases.*.items.*.harga_satuan' => 'required|numeric',
+            'purchases.*.items.*.total' => 'required|numeric',
         ]);
+
+        // Check for duplicate nomor_faktur before saving
+        foreach ($request->purchases as $pData) {
+            if (!empty($pData['nomor_faktur'])) {
+                $exists = OldPurchase::where('nomor_faktur', $pData['nomor_faktur'])->exists();
+                if ($exists) {
+                    return response()->json([
+                        'error' => 'duplicate',
+                        'message' => 'Nomor faktur "' . $pData['nomor_faktur'] . '" sudah pernah diimport.',
+                        'nomor_faktur' => $pData['nomor_faktur']
+                    ], 422);
+                }
+            }
+        }
 
         DB::transaction(function () use ($request) {
             foreach ($request->purchases as $pData) {
@@ -173,7 +208,21 @@ class OldPurchaseController extends Controller
                 ]);
 
                 foreach ($pData['items'] as $iData) {
+                    // Look up code_barang from mapping table if not provided
+                    $codeBarang = $iData['code_barang'] ?? null;
+                    if (!$codeBarang && !empty($iData['nama'])) {
+                        $mapping = DB::table('old_ms_barang_purchase')
+                            ->where('nama_barang', $iData['nama'])
+                            ->whereNotNull('code_barang')
+                            ->where('code_barang', '!=', '')
+                            ->first();
+                        if ($mapping) {
+                            $codeBarang = $mapping->code_barang;
+                        }
+                    }
+
                     $purchase->details()->create([
+                        'code_barang' => $codeBarang,
                         'nama' => $iData['nama'],
                         'qty' => $iData['qty'],
                         'harga_satuan' => $iData['harga_satuan'],
@@ -231,11 +280,12 @@ class OldPurchaseController extends Controller
     }
 
     /**
-     * Resume Detail: list purchases for a specific month.
+     * Resume Detail: list purchases for a specific month, with item details.
      */
     public function resumeDetail($year, $month)
     {
-        $purchases = OldPurchase::whereYear('tanggal_faktur', $year)
+        $purchases = OldPurchase::with('details')
+            ->whereYear('tanggal_faktur', $year)
             ->whereMonth('tanggal_faktur', $month)
             ->orderBy('tanggal_faktur', 'desc')
             ->get();
@@ -270,6 +320,125 @@ class OldPurchaseController extends Controller
         return response()->json([
             'purchase' => $purchase,
             'summary' => $summary,
+        ]);
+    }
+
+    /**
+     * Bulk toggle resume_status for all purchases in a specific month.
+     */
+    public function bulkToggleResumeStatus(Request $request, $year, $month)
+    {
+        $newStatus = $request->boolean('resume_status');
+
+        $updated = OldPurchase::whereYear('tanggal_faktur', $year)
+            ->whereMonth('tanggal_faktur', $month)
+            ->update(['resume_status' => $newStatus]);
+
+        $summary = DB::table('old_purchases')
+            ->select(
+                DB::raw('COUNT(*) as total_purchases'),
+                DB::raw('SUM(harga_total) as total_nominal'),
+                DB::raw('SUM(CASE WHEN resume_status = 1 THEN 1 ELSE 0 END) as true_purchases'),
+                DB::raw('SUM(CASE WHEN resume_status = 1 THEN harga_total ELSE 0 END) as true_nominal')
+            )
+            ->whereYear('tanggal_faktur', $year)
+            ->whereMonth('tanggal_faktur', $month)
+            ->first();
+
+        return response()->json([
+            'updated' => $updated,
+            'summary' => $summary,
+        ]);
+    }
+
+    /**
+     * Sync active purchases for a specific month to old_purchase_aktif.
+     * Also removes non-final purchases that are no longer active.
+     */
+    public function syncMonth($year, $month)
+    {
+        $added = 0;
+        $removed = 0;
+        $skipped = [];
+
+        DB::transaction(function () use ($year, $month, &$added, &$removed, &$skipped) {
+            // 1. ADD: active purchases not yet in old_purchase_aktif
+            $purchasesToAdd = OldPurchase::with('details')
+                ->where('resume_status', true)
+                ->whereYear('tanggal_faktur', $year)
+                ->whereMonth('tanggal_faktur', $month)
+                ->whereDoesntHave('aktif')
+                ->get();
+
+            foreach ($purchasesToAdd as $purchase) {
+                // Check: all details must have code_barang
+                $unmapped = $purchase->details->filter(function ($d) {
+                    return empty($d->code_barang);
+                });
+
+                if ($unmapped->count() > 0) {
+                    $skipped[] = $purchase->nomor_faktur ?: "ID #{$purchase->id}";
+                    continue;
+                }
+
+                $aktif = OldPurchaseAktif::create([
+                    'old_purchase_id' => $purchase->id,
+                    'nomor_faktur'    => $purchase->nomor_faktur,
+                    'supplier'        => $purchase->supplier,
+                    'tanggal_faktur'  => $purchase->tanggal_faktur,
+                    'harga_total'     => $purchase->harga_total,
+                    'ppn'             => $purchase->ppn,
+                    'subtotal'        => $purchase->subtotal,
+                    'is_final'        => false,
+                ]);
+
+                foreach ($purchase->details as $detail) {
+                    OldPurchaseAktifDetail::create([
+                        'old_purchase_aktif_id' => $aktif->id,
+                        'code_barang' => $detail->code_barang,
+                        'nama'        => $detail->nama,
+                        'qty'         => $detail->qty,
+                        'harga_satuan' => $detail->harga_satuan,
+                        'total'       => $detail->total,
+                    ]);
+                }
+
+                $added++;
+            }
+
+            // 2. REMOVE: non-final purchases that are no longer active
+            $toRemove = OldPurchaseAktif::where('is_final', false)
+                ->whereHas('oldPurchase', function ($q) use ($year, $month) {
+                    $q->where('resume_status', false)
+                      ->whereYear('tanggal_faktur', $year)
+                      ->whereMonth('tanggal_faktur', $month);
+                })
+                ->get();
+
+            foreach ($toRemove as $aktif) {
+                $aktif->details()->delete();
+                $aktif->delete();
+                $removed++;
+            }
+        });
+
+        // Updated sync info
+        $syncInfo = DB::table('old_purchase_aktif')
+            ->join('old_purchases', 'old_purchase_aktif.old_purchase_id', '=', 'old_purchases.id')
+            ->whereYear('old_purchases.tanggal_faktur', $year)
+            ->whereMonth('old_purchases.tanggal_faktur', $month)
+            ->selectRaw('
+                COUNT(*) as synced_count,
+                SUM(CASE WHEN old_purchase_aktif.is_final = 1 THEN 1 ELSE 0 END) as final_count
+            ')
+            ->first();
+
+        return response()->json([
+            'added'        => $added,
+            'removed'      => $removed,
+            'skipped'      => $skipped,
+            'synced_count' => (int) ($syncInfo->synced_count ?? 0),
+            'final_count'  => (int) ($syncInfo->final_count ?? 0),
         ]);
     }
 

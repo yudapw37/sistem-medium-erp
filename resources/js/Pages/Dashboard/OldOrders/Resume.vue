@@ -14,6 +14,52 @@
             </div>
         </div>
 
+        <!-- Semester Navigation -->
+        <div class="mb-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <!-- Year Selector -->
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-medium text-slate-600 dark:text-slate-400">Tahun:</label>
+                    <select
+                        v-model="selectedYear"
+                        @change="navigateToSemester"
+                        class="h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm font-semibold focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                    >
+                        <option v-for="y in availableYears" :key="y" :value="y">{{ y }}</option>
+                    </select>
+                </div>
+
+                <!-- Semester Toggle -->
+                <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+                    <button
+                        @click="selectedSemester = 1; navigateToSemester()"
+                        class="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                        :class="selectedSemester === 1
+                            ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'"
+                    >
+                        Semester 1
+                        <span class="text-xs text-slate-400 ml-1">(Jan - Jun)</span>
+                    </button>
+                    <button
+                        @click="selectedSemester = 2; navigateToSemester()"
+                        class="px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+                        :class="selectedSemester === 2
+                            ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'"
+                    >
+                        Semester 2
+                        <span class="text-xs text-slate-400 ml-1">(Jul - Des)</span>
+                    </button>
+                </div>
+
+                <!-- Current Info -->
+                <div class="ml-auto text-xs text-slate-400">
+                    Menampilkan {{ monthsData.length }} bulan
+                </div>
+            </div>
+        </div>
+
         <!-- Monthly Cards -->
         <div class="space-y-4" v-if="monthsData.length > 0">
             <div
@@ -36,6 +82,19 @@
                                 <h3 class="font-bold text-lg text-slate-900 dark:text-white">
                                     {{ getMonthName(item.month) }} {{ item.year }}
                                 </h3>
+                                <!-- Sync Status Badge -->
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span v-if="item.synced_count > 0"
+                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                                        <IconRefresh :size="12" />
+                                        {{ item.synced_count }} synced
+                                    </span>
+                                    <span v-if="item.final_count > 0"
+                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                                        <IconLock :size="12" />
+                                        {{ item.final_count }} final
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         <IconChevronDown
@@ -122,7 +181,7 @@
 
                         <!-- Order List -->
                         <div v-else class="p-4">
-                            <!-- Search and Export -->
+                            <!-- Search, Sync, and Export -->
                             <div class="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div class="relative w-full sm:w-72">
                                     <IconSearch :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -133,14 +192,72 @@
                                         class="w-full h-10 pl-9 pr-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder:text-slate-400"
                                     />
                                 </div>
-                                <a
-                                    :href="route('old-orders.resume-export-excel', { year: item.year, month: item.month })"
-                                    target="_blank"
-                                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold transition-all shadow-lg shadow-emerald-500/20"
-                                >
-                                    <IconFileSpreadsheet :size="18" />
-                                    Export Excel
-                                </a>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <!-- Bulk Toggle Buttons -->
+                                    <button
+                                        @click.stop="bulkToggle(item, index, true)"
+                                        :disabled="bulkToggling"
+                                        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 text-sm font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all"
+                                        :class="{ 'opacity-50 cursor-wait': bulkToggling }"
+                                    >
+                                        <IconChecks :size="16" />
+                                        Pilih Semua
+                                    </button>
+                                    <button
+                                        @click.stop="bulkToggle(item, index, false)"
+                                        :disabled="bulkToggling"
+                                        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                                        :class="{ 'opacity-50 cursor-wait': bulkToggling }"
+                                    >
+                                        <IconX :size="16" />
+                                        Tidak Pilih Semua
+                                    </button>
+                                    <!-- Sync Button -->
+                                    <button
+                                        @click.stop="syncMonth(item, index)"
+                                        :disabled="syncingMonth !== null"
+                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-bold transition-all shadow-lg"
+                                        :class="syncingMonth === index
+                                            ? 'bg-blue-400 cursor-wait shadow-blue-400/20'
+                                            : 'bg-blue-500 hover:bg-blue-600 shadow-blue-500/20'"
+                                    >
+                                        <IconRefresh
+                                            :size="18"
+                                            :class="{ 'animate-spin': syncingMonth === index }"
+                                        />
+                                        {{ syncingMonth === index ? 'Syncing...' : 'Sync ke Aktif' }}
+                                    </button>
+
+                                    <!-- Export Button -->
+                                    <a
+                                        :href="route('old-orders.resume-export-excel', { year: item.year, month: item.month })"
+                                        target="_blank"
+                                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold transition-all shadow-lg shadow-emerald-500/20"
+                                    >
+                                        <IconFileSpreadsheet :size="18" />
+                                        Export Excel
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Sync Result Alert -->
+                            <div v-if="syncResult && syncResultMonth === index"
+                                class="mb-4 p-3 rounded-xl border text-sm"
+                                :class="syncResult.added > 0 || syncResult.removed > 0
+                                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300'
+                                    : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'"
+                            >
+                                <div class="flex items-center gap-2">
+                                    <IconCircleCheck :size="16" class="text-blue-500" />
+                                    <span>
+                                        Sync selesai:
+                                        <strong>{{ syncResult.added }}</strong> order ditambahkan,
+                                        <strong>{{ syncResult.removed }}</strong> order dihapus.
+                                        <span class="text-slate-400 ml-1">
+                                            ({{ syncResult.synced_count }} synced, {{ syncResult.final_count }} final)
+                                        </span>
+                                    </span>
+                                </div>
                             </div>
 
                             <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
@@ -225,14 +342,14 @@
                 Tidak Ada Data
             </h3>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-                Tidak ditemukan data old order.
+                Tidak ditemukan data old order di periode ini.
             </p>
         </div>
     </DashboardLayout>
 </template>
 
 <script setup>
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import {
     IconCalendar,
     IconChevronDown,
@@ -240,6 +357,10 @@ import {
     IconDatabaseOff,
     IconSearch,
     IconFileSpreadsheet,
+    IconRefresh,
+    IconChecks,
+    IconX,
+    IconLock,
 } from '@tabler/icons-vue';
 import { ref, reactive, computed } from 'vue';
 import axios from 'axios';
@@ -247,16 +368,25 @@ import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 
 const props = defineProps({
     months: Array,
+    availableYears: Array,
+    filters: Object,
 });
 
 // Make months data reactive so we can update summaries
 const monthsData = reactive([...props.months]);
+
+const selectedYear = ref(props.filters.year);
+const selectedSemester = ref(props.filters.semester);
 
 const expandedMonth = ref(null);
 const expandedOrders = ref([]);
 const loadingDetail = ref(false);
 const togglingId = ref(null);
 const searchQuery = ref('');
+const syncingMonth = ref(null);
+const bulkToggling = ref(false);
+const syncResult = ref(null);
+const syncResultMonth = ref(null);
 
 const filteredOrders = computed(() => {
     if (!searchQuery.value) return expandedOrders.value;
@@ -273,17 +403,31 @@ const monthNames = [
 
 const getMonthName = (month) => monthNames[month] || '';
 
+const navigateToSemester = () => {
+    router.get(route('old-orders.resume'), {
+        year: selectedYear.value,
+        semester: selectedSemester.value,
+    }, {
+        preserveState: false,
+        preserveScroll: false,
+    });
+};
+
 const toggleExpand = async (index, item) => {
     if (expandedMonth.value === index) {
         expandedMonth.value = null;
         expandedOrders.value = [];
         searchQuery.value = '';
+        syncResult.value = null;
+        syncResultMonth.value = null;
         return;
     }
 
     expandedMonth.value = index;
     loadingDetail.value = true;
     expandedOrders.value = [];
+    syncResult.value = null;
+    syncResultMonth.value = null;
 
     try {
         const response = await axios.get(route('old-orders.resume-detail', {
@@ -321,6 +465,64 @@ const toggleStatus = async (order, monthIndex) => {
         console.error('Error toggling status:', error);
     } finally {
         togglingId.value = null;
+    }
+};
+
+const bulkToggle = async (item, index, status) => {
+    const label = status ? 'aktifkan' : 'non-aktifkan';
+    if (!confirm(`Yakin ingin ${label} SEMUA order di bulan ${getMonthName(item.month)} ${item.year}?`)) return;
+
+    bulkToggling.value = true;
+    try {
+        const response = await axios.put(route('old-orders.bulk-toggle', {
+            year: item.year,
+            month: item.month
+        }), {
+            resume_status: status,
+        });
+
+        // Update local orders
+        expandedOrders.value.forEach(o => o.resume_status = status);
+
+        // Update monthly summary
+        if (response.data.summary) {
+            const summary = response.data.summary;
+            monthsData[index].true_orders = summary.true_orders;
+            monthsData[index].true_barang = summary.true_barang;
+            monthsData[index].true_nominal = summary.true_nominal;
+        }
+    } catch (error) {
+        console.error('Error bulk toggling:', error);
+        alert('Gagal: ' + (error.response?.data?.message || error.message));
+    } finally {
+        bulkToggling.value = false;
+    }
+};
+
+const syncMonth = async (item, index) => {
+    if (syncingMonth.value !== null) return;
+
+    syncingMonth.value = index;
+    syncResult.value = null;
+    syncResultMonth.value = null;
+
+    try {
+        const response = await axios.post(route('old-orders.resume-sync', {
+            year: item.year,
+            month: item.month
+        }));
+
+        syncResult.value = response.data;
+        syncResultMonth.value = index;
+
+        // Update sync status on the month card
+        monthsData[index].synced_count = response.data.synced_count;
+        monthsData[index].final_count = response.data.final_count;
+    } catch (error) {
+        console.error('Error syncing month:', error);
+        alert('Gagal sync: ' + (error.response?.data?.message || error.message));
+    } finally {
+        syncingMonth.value = null;
     }
 };
 

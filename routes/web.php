@@ -49,6 +49,7 @@ use App\Http\Controllers\Apps\UnitController;
 use App\Http\Controllers\Apps\StockPenyesuaianController;
 use App\Http\Controllers\Apps\ZeroValueTransactionController;
 use App\Http\Controllers\Apps\OldOrderController;
+use App\Http\Controllers\Apps\HelpdeskController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
@@ -90,6 +91,7 @@ Route::get('/run-migrate/{token}', function ($token) {
 
 Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::get('/', [DashboardController::class, 'index'])->middleware(['auth', 'verified', 'permission:dashboard-access'])->name('dashboard');
+    Route::get('/helpdesk', [HelpdeskController::class, 'index'])->middleware(['auth', 'verified'])->name('helpdesk.index');
     Route::get('/permissions', [PermissionController::class, 'index'])->middleware('permission:permissions-access')->name('permissions.index');
     // roles route
     Route::resource('/roles', RoleController::class)
@@ -205,6 +207,8 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::get('/old-orders/resume/{year}/{month}', [OldOrderController::class, 'resumeDetail'])->middleware('permission:transactions-access')->name('old-orders.resume-detail');
     Route::put('/old-orders/{id}/toggle-status', [OldOrderController::class, 'toggleResumeStatus'])->middleware('permission:transactions-access')->name('old-orders.toggle-status');
     Route::get('/old-orders/resume/{year}/{month}/export-excel', [OldOrderController::class, 'exportResumeExcel'])->middleware('permission:transactions-access')->name('old-orders.resume-export-excel');
+    Route::post('/old-orders/resume/{year}/{month}/sync', [OldOrderController::class, 'syncMonth'])->middleware('permission:transactions-access')->name('old-orders.resume-sync');
+    Route::put('/old-orders/resume/{year}/{month}/bulk-toggle', [OldOrderController::class, 'bulkToggleResumeStatus'])->middleware('permission:transactions-access')->name('old-orders.bulk-toggle');
     Route::get('/old-orders/product-resume', [OldOrderController::class, 'productResume'])->middleware('permission:transactions-access')->name('old-orders.product-resume');
     Route::get('/old-orders/product-resume/export-excel', [OldOrderController::class, 'exportProductResumeExcel'])->middleware('permission:transactions-access')->name('old-orders.product-resume-export-excel');
     Route::get('/old-orders/resume-report/export-excel', [OldOrderController::class, 'exportResumeReportExcel'])->middleware('permission:transactions-access')->name('old-orders.resume-report-export-excel');
@@ -212,6 +216,15 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::post('/old-orders/bulk-print', [OldOrderController::class, 'bulkPrint'])->middleware('permission:transactions-access')->name('old-orders.bulk-print');
     Route::get('/old-orders/{id}/print', [OldOrderController::class, 'print'])->middleware('permission:transactions-access')->name('old-orders.print');
     Route::get('/old-orders/{id}', [OldOrderController::class, 'show'])->middleware('permission:transactions-access')->name('old-orders.show');
+
+    // Old Orders Aktif (Synced/Finalized)
+    Route::get('/old-orders-aktif/resume', [\App\Http\Controllers\Apps\OldOrderAktifController::class, 'resume'])->middleware('permission:transactions-access')->name('old-orders-aktif.resume');
+    Route::get('/old-orders-aktif/resume/{year}/{month}', [\App\Http\Controllers\Apps\OldOrderAktifController::class, 'resumeDetail'])->middleware('permission:transactions-access')->name('old-orders-aktif.resume-detail');
+    Route::post('/old-orders-aktif/resume/{year}/{month}/sync-stock', [\App\Http\Controllers\Apps\OldOrderAktifController::class, 'syncStock'])->middleware('permission:transactions-access')->name('old-orders-aktif.sync-stock');
+    Route::post('/old-orders-aktif/resume/{year}/{month}/unfinal-stock', [\App\Http\Controllers\Apps\OldOrderAktifController::class, 'unfinalStock'])->middleware('permission:transactions-access')->name('old-orders-aktif.unfinal-stock');
+
+    // Old Stock Reports
+    Route::get('/old-stock-report/monthly', [\App\Http\Controllers\Apps\OldStockReportController::class, 'monthlyReport'])->middleware('permission:transactions-access')->name('old-stock-report.monthly');
 
     // Resume & Reports
     Route::get('/old-purchases/resume', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'resume'])
@@ -222,6 +235,16 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
         ->middleware('permission:transactions-access')->name('old-purchases.toggle-status');
     Route::get('/old-purchases/resume-report', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'resumeReport'])
         ->middleware('permission:transactions-access')->name('old-purchases.resume-report');
+    Route::put('/old-purchases/bulk-toggle/{year}/{month}', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'bulkToggleResumeStatus'])
+        ->middleware('permission:transactions-access')->name('old-purchases.bulk-toggle');
+    Route::post('/old-purchases/sync-month/{year}/{month}', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'syncMonth'])
+        ->middleware('permission:transactions-access')->name('old-purchases.sync-month');
+
+    // Old Purchases Aktif (Synced/Finalized)
+    Route::get('/old-purchases-aktif/resume', [\App\Http\Controllers\Apps\OldPurchaseAktifController::class, 'resume'])->middleware('permission:transactions-access')->name('old-purchases-aktif.resume');
+    Route::get('/old-purchases-aktif/resume/{year}/{month}', [\App\Http\Controllers\Apps\OldPurchaseAktifController::class, 'resumeDetail'])->middleware('permission:transactions-access')->name('old-purchases-aktif.resume-detail');
+    Route::post('/old-purchases-aktif/resume/{year}/{month}/sync-stock', [\App\Http\Controllers\Apps\OldPurchaseAktifController::class, 'syncStock'])->middleware('permission:transactions-access')->name('old-purchases-aktif.sync-stock');
+    Route::post('/old-purchases-aktif/resume/{year}/{month}/unfinal-stock', [\App\Http\Controllers\Apps\OldPurchaseAktifController::class, 'unfinalStock'])->middleware('permission:transactions-access')->name('old-purchases-aktif.unfinal-stock');
 
     // Exports
     Route::get('/old-purchases/export-resume/{year}/{month}', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'exportResumeExcel'])
@@ -238,6 +261,22 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::post('/old-purchases/store', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'store'])->middleware('permission:transactions-access')->name('old-purchases.store');
     Route::get('/old-purchases/{id}', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'show'])->middleware('permission:transactions-access')->name('old-purchases.show');
     Route::delete('/old-purchases/{id}', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'destroy'])->middleware('permission:transactions-access')->name('old-purchases.destroy');
+
+    // Old Barang Master
+    Route::get('/old-barang-master', [\App\Http\Controllers\Apps\OldBarangMasterController::class, 'index'])->middleware('permission:transactions-access')->name('old-barang-master.index');
+
+    // Old Barang Purchase
+    Route::get('/old-barang-purchase', [\App\Http\Controllers\Apps\OldBarangPurchaseController::class, 'index'])->middleware('permission:transactions-access')->name('old-barang-purchase.index');
+    Route::get('/old-barang-purchase/barang-options', [\App\Http\Controllers\Apps\OldBarangPurchaseController::class, 'getBarangOptions'])->middleware('permission:transactions-access')->name('old-barang-purchase.barang-options');
+    Route::put('/old-barang-purchase/{id}/mapping', [\App\Http\Controllers\Apps\OldBarangPurchaseController::class, 'updateMapping'])->middleware('permission:transactions-access')->name('old-barang-purchase.mapping');
+    Route::post('/old-barang-purchase/sync', [\App\Http\Controllers\Apps\OldBarangPurchaseController::class, 'syncToPurchaseDetails'])->middleware('permission:transactions-access')->name('old-barang-purchase.sync');
+
+    // Stock
+    Route::get('/stock-awal', [\App\Http\Controllers\Apps\StockController::class, 'index'])->middleware('permission:transactions-access')->name('stock-awal.index');
+    Route::post('/stock-awal', [\App\Http\Controllers\Apps\StockController::class, 'store'])->middleware('permission:transactions-access')->name('stock-awal.store');
+    Route::put('/stock-awal/{id}', [\App\Http\Controllers\Apps\StockController::class, 'update'])->middleware('permission:transactions-access')->name('stock-awal.update');
+    Route::delete('/stock-awal/{id}', [\App\Http\Controllers\Apps\StockController::class, 'destroy'])->middleware('permission:transactions-access')->name('stock-awal.destroy');
+    Route::get('/stock-running', [\App\Http\Controllers\Apps\StockController::class, 'running'])->middleware('permission:transactions-access')->name('stock-running.index');
 
     // Sale Approval Routes
     Route::get('/approvals/finance', [SaleApprovalController::class, 'financeIndex'])
