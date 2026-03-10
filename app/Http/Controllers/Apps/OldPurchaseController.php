@@ -40,8 +40,29 @@ class OldPurchaseController extends Controller
             'file' => 'required|mimes:pdf|max:10240',
         ]);
 
-        $parser = new Parser();
-        $pdf = $parser->parseFile($request->file('file')->getPathname());
+        // Increase resources for PDF parsing
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
+
+        // Check required extensions
+        if (!extension_loaded('mbstring')) {
+            return response()->json(['error' => 'extension_missing', 'message' => 'PHP extension "mbstring" tidak terpasang di server.'], 500);
+        }
+        if (!extension_loaded('gd') && !extension_loaded('zlib')) {
+            // zlib is often used for compressed PDFs
+        }
+
+        try {
+            $parser = new Parser();
+            $pdf = $parser->parseFile($request->file('file')->getPathname());
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'parse_error',
+                'message' => 'Gagal membaca PDF: ' . $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+
         $filename = $request->file('file')->getClientOriginalName();
 
         $extractedData = [];

@@ -254,7 +254,8 @@ const uploadAndParse = async () => {
                 confirmButtonText: 'OK'
             });
         } else {
-            Swal.fire('Error', 'Gagal mengekstrak data PDF. Periksa format file.', 'error');
+            const errorMsg = error.response?.data?.message || 'Gagal mengekstrak data PDF. Periksa format file.';
+            Swal.fire('Error', errorMsg, 'error');
         }
     } finally {
         isParsing.value = false;
