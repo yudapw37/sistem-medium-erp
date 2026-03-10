@@ -30,7 +30,7 @@
             >
                 <div
                     v-if="isOpen"
-                    class="absolute z-50 mt-1 w-full p-4 border rounded-lg flex flex-col gap-2 bg-gray-100 dark:border-gray-900 dark:bg-gray-950"
+                    class="absolute z-50 mt-1 w-full p-2 border rounded-lg flex flex-col gap-1 bg-white dark:border-gray-800 dark:bg-gray-950 shadow-xl max-h-60 overflow-y-auto"
                     @click.stop
                 >
                     <input

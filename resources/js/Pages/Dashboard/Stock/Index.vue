@@ -98,23 +98,21 @@
         </template>
 
         <!-- Modal -->
-        <Modal v-model="showModal" :title="editMode ? 'Edit Stock Awal' : 'Tambah Stock Awal'">
+        <Modal :show="showModal" @close="closeModal" :title="editMode ? 'Edit Stock Awal' : 'Tambah Stock Awal'">
             <form @submit.prevent="submitForm" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                         Barang
                     </label>
-                    <select
-                        v-model="form.code_barang"
+                    <InputSelect
+                        :data="barangs"
+                        :selected="props.barangs.find(b => b.id === form.code_barang)"
+                        :setSelected="(val) => form.code_barang = val.id"
+                        display-key="judul_buku"
+                        placeholder="Pilih Barang"
+                        :searchable="true"
                         :disabled="editMode"
-                        class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-800"
-                        required
-                    >
-                        <option value="">Pilih Barang</option>
-                        <option v-for="barang in barangs" :key="barang.kode_buku" :value="barang.kode_buku">
-                            {{ barang.judul_buku }} ({{ barang.kode_buku }})
-                        </option>
-                    </select>
+                    />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -139,20 +137,18 @@
                         required
                     />
                 </div>
-            </form>
-            <template #footer>
-                <div class="flex justify-end gap-2">
-                    <button @click="closeModal" class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700">
+                <div class="flex justify-end gap-2 mt-6 pt-4 border-t dark:border-slate-800">
+                    <button type="button" @click="closeModal" class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">
                         Batal
                     </button>
                     <button
-                        @click="submitForm"
-                        class="px-4 py-2 rounded-lg bg-primary-500 text-white font-semibold hover:bg-primary-600"
+                        type="submit"
+                        class="px-4 py-2 rounded-lg bg-primary-500 text-white font-semibold hover:bg-primary-600 shadow-lg shadow-primary-500/20 transition-all"
                     >
                         {{ editMode ? 'Update' : 'Simpan' }}
                     </button>
                 </div>
-            </template>
+            </form>
         </Modal>
     </DashboardLayout>
 </template>
@@ -171,6 +167,7 @@ import TableEmpty from '@/Components/Dashboard/TableEmpty.vue'
 import Pagination from '@/Components/Dashboard/Pagination.vue'
 import Search from '@/Components/Dashboard/Search.vue'
 import Modal from '@/Components/Dashboard/Modal.vue'
+import InputSelect from '@/Components/Dashboard/InputSelect.vue'
 import { IconPlus, IconPencil, IconTrash } from '@tabler/icons-vue'
 
 const props = defineProps({

@@ -212,6 +212,27 @@
                                         <IconX :size="16" />
                                         Tidak Pilih Semua
                                     </button>
+
+                                    <!-- Auto Suggestion Input & Button -->
+                                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="text-xs font-semibold text-slate-500 uppercase">Target:</span>
+                                            <input
+                                                v-model="targetNominal"
+                                                type="number"
+                                                class="w-32 h-7 px-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-primary-500 transition-all"
+                                                placeholder="Nominal..."
+                                            />
+                                        </div>
+                                        <button
+                                            @click.stop="suggestActivation(item, index)"
+                                            :disabled="bulkToggling || !targetNominal"
+                                            class="h-7 px-3 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Terapkan Saran
+                                        </button>
+                                    </div>
+
                                     <!-- Sync Button -->
                                     <button
                                         @click.stop="syncMonth(item, index)"
@@ -387,6 +408,7 @@ const syncingMonth = ref(null);
 const bulkToggling = ref(false);
 const syncResult = ref(null);
 const syncResultMonth = ref(null);
+const targetNominal = ref('');
 
 const filteredOrders = computed(() => {
     if (!searchQuery.value) return expandedOrders.value;
@@ -493,6 +515,37 @@ const bulkToggle = async (item, index, status) => {
         }
     } catch (error) {
         console.error('Error bulk toggling:', error);
+        alert('Gagal: ' + (error.response?.data?.message || error.message));
+    } finally {
+        bulkToggling.value = false;
+    }
+};
+
+const suggestActivation = async (item, index) => {
+    if (!targetNominal.value) return;
+    if (!confirm(`Terapkan saran aktivasi otomatis untuk target Rp ${formatNumber(targetNominal.value)}?`)) return;
+
+    bulkToggling.value = true;
+    try {
+        const response = await axios.put(route('old-orders.bulk-auto-toggle', {
+            year: item.year,
+            month: item.month
+        }), {
+            target_nominal: targetNominal.value,
+        });
+
+        // Update local orders
+        expandedOrders.value = response.data.orders;
+
+        // Update monthly summary
+        if (response.data.summary) {
+            const summary = response.data.summary;
+            monthsData[index].true_orders = summary.true_orders;
+            monthsData[index].true_barang = summary.true_barang;
+            monthsData[index].true_nominal = summary.true_nominal;
+        }
+    } catch (error) {
+        console.error('Error applying suggestion:', error);
         alert('Gagal: ' + (error.response?.data?.message || error.message));
     } finally {
         bulkToggling.value = false;

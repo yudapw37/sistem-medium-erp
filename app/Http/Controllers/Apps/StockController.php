@@ -16,12 +16,8 @@ class StockController extends Controller
     {
         $stockAwal = OldStockAwal::with('barang')->latest()->paginate(10);
 
-        // Get available barang that have been used in purchases
-        $barangs = OldBarang::whereExists(function ($query) {
-            $query->select(DB::raw(1))
-                ->from('old_purchase_details')
-                ->whereRaw('old_purchase_details.code_barang = old_ms_barang.id');
-        })->orderBy('judul_buku')->get();
+        // Get all barang for selection
+        $barangs = OldBarang::orderBy('judul_buku')->get();
 
         return Inertia::render('Dashboard/Stock/Index', [
             'stockAwal' => $stockAwal,

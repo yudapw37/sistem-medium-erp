@@ -231,6 +231,70 @@ class OldOrderController extends Controller
     }
 
     /**
+     * Apply suggestion for resume_status based on a target nominal.
+     */
+    public function applyActivationSuggestion(Request $request, $year, $month)
+    {
+        $request->validate([
+            'target_nominal' => 'required|numeric|min:0',
+        ]);
+
+        $targetNominal = (float) $request->target_nominal;
+
+        DB::transaction(function () use ($year, $month, $targetNominal) {
+            // 1. Reset all orders for the month to resume_status = 0
+            OldOrder::whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->update(['resume_status' => 0]);
+
+            // 2. Fetch all orders for the month, sorted BY NOMINAL DESCENDING (greedy)
+            $orders = OldOrder::whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->select('*', DB::raw('(total_harga + COALESCE(biayaExpedisi, 0) - COALESCE(totalDiskon, 0) - COALESCE(diskonKodeUnik, 0)) as computed_nominal'))
+                ->orderBy('computed_nominal', 'desc')
+                ->get();
+
+            $currentSum = 0;
+            foreach ($orders as $order) {
+                if ($currentSum + $order->computed_nominal <= $targetNominal) {
+                    $order->resume_status = 1;
+                    $order->save();
+                    $currentSum += $order->computed_nominal;
+                }
+            }
+        });
+
+        // Return updated list and summary
+        $summary = DB::table('old_order')
+            ->select(
+                DB::raw('COUNT(*) as total_orders'),
+                DB::raw('SUM(total_barang) as total_barang'),
+                DB::raw('SUM(total_harga + COALESCE(biayaExpedisi, 0) - COALESCE(totalDiskon, 0) - COALESCE(diskonKodeUnik, 0)) as total_nominal'),
+                DB::raw('SUM(CASE WHEN resume_status = 1 THEN 1 ELSE 0 END) as true_orders'),
+                DB::raw('SUM(CASE WHEN resume_status = 1 THEN total_barang ELSE 0 END) as true_barang'),
+                DB::raw('SUM(CASE WHEN resume_status = 1 THEN (total_harga + COALESCE(biayaExpedisi, 0) - COALESCE(totalDiskon, 0) - COALESCE(diskonKodeUnik, 0)) ELSE 0 END) as true_nominal')
+            )
+            ->whereYear('created_at', $year)
+            ->whereMonth('created_at', $month)
+            ->first();
+
+        $updatedOrders = OldOrder::with('customer')
+            ->whereYear('created_at', $year)
+            ->whereMonth('created_at', $month)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($order) {
+                $order->computed_nominal = $order->total_harga + ($order->biayaExpedisi ?? 0) - ($order->totalDiskon ?? 0) - ($order->diskonKodeUnik ?? 0);
+                return $order;
+            });
+
+        return response()->json([
+            'orders' => $updatedOrders,
+            'summary' => $summary,
+        ]);
+    }
+
+    /**
      * Sync active orders for a specific month to old_order_aktif.
      * Also removes non-final orders that are no longer active.
      */

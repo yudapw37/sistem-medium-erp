@@ -209,6 +209,7 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::get('/old-orders/resume/{year}/{month}/export-excel', [OldOrderController::class, 'exportResumeExcel'])->middleware('permission:transactions-access')->name('old-orders.resume-export-excel');
     Route::post('/old-orders/resume/{year}/{month}/sync', [OldOrderController::class, 'syncMonth'])->middleware('permission:transactions-access')->name('old-orders.resume-sync');
     Route::put('/old-orders/resume/{year}/{month}/bulk-toggle', [OldOrderController::class, 'bulkToggleResumeStatus'])->middleware('permission:transactions-access')->name('old-orders.bulk-toggle');
+    Route::put('/old-orders/resume/{year}/{month}/auto-toggle', [OldOrderController::class, 'applyActivationSuggestion'])->middleware('permission:transactions-access')->name('old-orders.bulk-auto-toggle');
     Route::get('/old-orders/product-resume', [OldOrderController::class, 'productResume'])->middleware('permission:transactions-access')->name('old-orders.product-resume');
     Route::get('/old-orders/product-resume/export-excel', [OldOrderController::class, 'exportProductResumeExcel'])->middleware('permission:transactions-access')->name('old-orders.product-resume-export-excel');
     Route::get('/old-orders/resume-report/export-excel', [OldOrderController::class, 'exportResumeReportExcel'])->middleware('permission:transactions-access')->name('old-orders.resume-report-export-excel');

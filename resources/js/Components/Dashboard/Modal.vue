@@ -26,7 +26,7 @@
                 <div
                     v-if="show"
                     :class="[
-                        'mb-6 bg-white dark:bg-gray-950 rounded-lg overflow-hidden shadow-xl transform transition-all w-full sm:mx-auto',
+                        'mb-6 bg-white dark:bg-gray-950 rounded-lg shadow-xl transform transition-all w-full sm:mx-auto',
                         maxWidthClass,
                     ]"
                     @click.stop
