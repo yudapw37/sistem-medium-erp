@@ -437,4 +437,46 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::get('/util/storage-link', function () {
+    $target = storage_path('app/public');
+    
+    // Attempt to detect public_html base
+    $pathsToTry = [
+        base_path('../../public_html/storage'),
+        base_path('../public_html/storage'),
+        public_path('storage'),
+    ];
+
+    $results = [];
+
+    foreach ($pathsToTry as $link) {
+        $parentDir = dirname($link);
+        if (!is_dir($parentDir)) {
+            $results[] = "Skipping $link: Parent directory $parentDir not found.";
+            continue;
+        }
+
+        if (file_exists($link)) {
+            if (is_link($link)) {
+                $results[] = "Link already exists at $link (Points to: " . readlink($link) . ")";
+                continue;
+            }
+            $results[] = "Error: A file or directory already exists at $link. Please delete it manually if you want to create a symlink.";
+            continue;
+        }
+
+        try {
+            if (symlink($target, $link)) {
+                $results[] = "Success: Symlink created from $target to $link";
+            } else {
+                $results[] = "Failed: symlink() returned false for $link";
+            }
+        } catch (\Exception $e) {
+            $results[] = "Error at $link: " . $e->getMessage();
+        }
+    }
+
+    return "<pre>" . implode("\n", $results) . "</pre>";
+});
+
 require __DIR__ . '/auth.php';
