@@ -430,6 +430,10 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
         Route::get('payables/supplier/{supplierId}', [PayableController::class, 'supplierCard'])->name('payables.supplier-card');
         Route::get('payables/{purchaseId}', [PayableController::class, 'show'])->name('payables.show');
         Route::post('payables/{purchaseId}/payment', [PayableController::class, 'storePayment'])->name('payables.payment');
+        // Old Profit Report
+        Route::get('/old-profit-report', [\App\Http\Controllers\Apps\OldProfitReportController::class, 'index'])->name('old-profit-report.index');
+        Route::get('/old-profit-report/export', [\App\Http\Controllers\Apps\OldProfitReportController::class, 'export'])->name('old-profit-report.export');
+
     });
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

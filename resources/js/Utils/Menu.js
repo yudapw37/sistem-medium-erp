@@ -8,6 +8,7 @@ import {
     IconChartArrowsVertical,
     IconChartBarPopular,
     IconChartInfographic,
+    IconChartBar,
     IconChartLine,
     IconCirclePlus,
     IconClockHour6,
@@ -641,6 +642,13 @@ export default function useMenu() {
                             permissions: hasAnyPermission(['transactions-access']),
                         },
                     ]
+                },
+                {
+                    title: 'Laba Kotor Old',
+                    href: route('old-profit-report.index'),
+                    active: url.startsWith('/dashboard/old-profit-report'),
+                    icon: IconChartBar,
+                    permissions: hasAnyPermission(['transactions-access']),
                 },
                 {
                     title: 'Helpdesk',
