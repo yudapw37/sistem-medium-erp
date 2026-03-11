@@ -67,12 +67,49 @@ class OldPurchaseController extends Controller
 
         $extractedData = [];
 
+        // Phase 1: Merge multi-page invoices
+        // Detect "X dariY" pattern (e.g. "1  dari2") to identify continuation pages
+        $invoiceTexts = [];
+        $currentText = '';
+        $startPage = 1;
+
         foreach ($pdf->getPages() as $index => $page) {
-            $text = $page->getText();
+            $pageText = $page->getText();
+            $currentText .= $pageText . "\n";
+
+            // Check for "X dariY" pattern — if X < Y, this page continues to the next
+            if (preg_match('/(\d+)\s+dari\s*(\d+)/', $pageText, $pageIndicator)) {
+                $currentPage = (int) $pageIndicator[1];
+                $totalPages = (int) $pageIndicator[2];
+                if ($currentPage < $totalPages) {
+                    continue; // Still has continuation pages, keep merging
+                }
+            }
+
+            // Invoice is complete (either last page of multi-page or single-page)
+            $invoiceTexts[] = [
+                'text' => $currentText,
+                'start_page' => $startPage,
+            ];
+            $currentText = '';
+            $startPage = $index + 2; // Next invoice starts on the next page
+        }
+
+        // If there's remaining text (shouldn't happen, but safety net)
+        if (!empty(trim($currentText))) {
+            $invoiceTexts[] = [
+                'text' => $currentText,
+                'start_page' => $startPage,
+            ];
+        }
+
+        // Phase 2: Parse each merged invoice text
+        foreach ($invoiceTexts as $invoiceData) {
+            $text = $invoiceData['text'];
 
             // Basic extraction logic based on "Faktur Pajak" structure
             // Nomor Faktur
-            preg_match('/Kode dan Nomor Seri Faktur Pajak : ([\d\.-]+)/', $text, $matches);
+            preg_match('/Kode dan Nomor Seri Faktur Pajak : ([\d\.\-]+)/', $text, $matches);
             $nomorFaktur = $matches[1] ?? null;
 
             // Check if nomor_faktur already exists in database
@@ -88,7 +125,6 @@ class OldPurchaseController extends Controller
             }
 
             // Supplier
-            // Usually Macanan Jaya is the seller
             preg_match('/Nama : (PT\s+MACANANJAYA\s+CEMERLANG)/', $text, $matches);
             $supplier = $matches[1] ?? 'PT MACANANJAYA CEMERLANG';
 
@@ -98,33 +134,19 @@ class OldPurchaseController extends Controller
             $tanggalFaktur = $this->parseIndonesianDate($tanggalString);
 
             // Totals
-            // "Harga Jual / Penggantian	4.205.676,00"
             preg_match('/Harga Jual \/ Penggantian\s+([\d\.,]+)/', $text, $matches);
             $hargaJualVal = $this->parseNumber($matches[1] ?? '0');
 
-            // "Total PPN	462.624,00"
             preg_match('/Total PPN\s+([\d\.,]+)/', $text, $matches);
             $totalPpn = $this->parseNumber($matches[1] ?? '0');
 
-            // User mapping:
-            // harga total = Harga Jual / Penggantian
-            // ppn = Total PPN
-            // subtotal = harga total - ppn
             $hargaTotal = $hargaJualVal;
             $ppn = $totalPpn;
             $subtotal = $hargaTotal - $ppn;
 
-            // Items - Looking for blocks like:
-            // "COVER BUKU HARDCOVER PILUNG MUSHAF AL-QURAN &"
-            // "TERJEMAH (AL-KARIM)"
-            // "Rp 5.135 x 819"
-            // "4.205.676,001" (Price followed by index)
-
-            // This is the tricky part. Let's use the sequence: Name -> Price per unit x Qty -> Total
+            // Items
             $items = [];
 
-            // Regex for items: Captures the "Rp X x Y" line and tries to find the name before it
-            // Pattern for Price and Qty: Rp 5.135 x 819
             preg_match_all('/Rp\s+([\d\.,]+)\s+x\s+([\d\.,]+)/', $text, $itemMatches, PREG_OFFSET_CAPTURE);
 
             foreach ($itemMatches[0] as $matchIndex => $matchInfo) {
@@ -134,19 +156,14 @@ class OldPurchaseController extends Controller
                 $pricePerUnit = $this->parseNumber($itemMatches[1][$matchIndex][0]);
                 $qty = $this->parseNumber($itemMatches[2][$matchIndex][0]);
 
-                // Try to find the name before this line
-                // The name is usually after "Nama Barang Kena Pajak / Jasa Kena Pajak" or after the previous item's total
-                // In simple parsing, we can just split the text and look around.
-                // For now, let's extract snippets.
                 $beforeText = substr($text, 0, $offset);
                 $linesBefore = explode("\n", trim($beforeText));
 
-                // The name often spans multiple lines
                 $itemName = "";
                 $foundIndex = -1;
                 for ($i = count($linesBefore) - 1; $i >= 0; $i--) {
                     $line = trim($linesBefore[$i]);
-                    if (preg_match('/^[\d\.,]+[\d]$/', $line)) { // Total price from previous item or header
+                    if (preg_match('/^[\d\.,]+[\d]$/', $line)) {
                         $foundIndex = $i;
                         break;
                     }
@@ -172,7 +189,7 @@ class OldPurchaseController extends Controller
             }
 
             $extractedData[] = [
-                'pdf_page' => $index + 1,
+                'pdf_page' => $invoiceData['start_page'],
                 'nomor_faktur' => $nomorFaktur,
                 'supplier' => $supplier,
                 'tanggal_faktur' => $tanggalFaktur,
