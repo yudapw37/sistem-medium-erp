@@ -125,7 +125,7 @@ class OldPurchaseController extends Controller
 
             // Regex for items: Captures the "Rp X x Y" line and tries to find the name before it
             // Pattern for Price and Qty: Rp 5.135 x 819
-            preg_match_all('/Rp\s+([\d\.]+)\s+x\s+([\d\.]+)/', $text, $itemMatches, PREG_OFFSET_CAPTURE);
+            preg_match_all('/Rp\s+([\d\.,]+)\s+x\s+([\d\.,]+)/', $text, $itemMatches, PREG_OFFSET_CAPTURE);
 
             foreach ($itemMatches[0] as $matchIndex => $matchInfo) {
                 $fullMatch = $matchInfo[0];

@@ -96,9 +96,11 @@
                                         </div>
                                         <div class="flex flex-col">
                                             <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tanggal</span>
-                                            <span class="text-sm font-semibold text-slate-900 dark:text-white">
-                                                {{ purchase.tanggal_faktur ? new Date(purchase.tanggal_faktur).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-' }}
-                                            </span>
+                                            <input
+                                                type="date"
+                                                v-model="purchase.tanggal_faktur"
+                                                class="mt-1 text-sm font-semibold text-slate-900 dark:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                            />
                                         </div>
                                     </div>
                                     <div class="space-y-2 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
