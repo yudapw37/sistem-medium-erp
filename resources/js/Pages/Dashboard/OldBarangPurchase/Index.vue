@@ -78,7 +78,7 @@
                     </TableTbody>
                 </Table>
             </TableCard>
-            <Pagination :data="barangPurchases" />
+            <Pagination :links="barangPurchases.links" />
         </template>
         <template v-else>
             <TableEmpty title="Belum ada data" description="Belum ada data barang purchase." />
