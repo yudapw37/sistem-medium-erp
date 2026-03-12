@@ -430,14 +430,29 @@ class OldPurchaseController extends Controller
                     'is_final'        => false,
                 ]);
 
-                foreach ($purchase->details as $detail) {
+                // Group details by code_barang to merge bundled items
+                // e.g. "Cover Buku 20pcs" + "Isi Buku 20pcs" → "Buku Z 20pcs"
+                $grouped = $purchase->details->groupBy('code_barang');
+
+                foreach ($grouped as $codeBarang => $details) {
+                    // Bundling logic: qty = MIN (components form 1 product, not sum)
+                    $bundleQty = $details->min('qty');
+                    // Total cost = SUM of all component costs
+                    $totalAmount = $details->sum('total');
+                    // Recalculate unit price from merged values
+                    $hargaSatuan = $bundleQty > 0 ? round($totalAmount / $bundleQty, 2) : 0;
+
+                    // Use master barang name if available
+                    $barang = OldBarang::find($codeBarang);
+                    $nama = $barang ? $barang->judul_buku : $details->first()->nama;
+
                     OldPurchaseAktifDetail::create([
                         'old_purchase_aktif_id' => $aktif->id,
-                        'code_barang' => $detail->code_barang,
-                        'nama'        => $detail->nama,
-                        'qty'         => $detail->qty,
-                        'harga_satuan' => $detail->harga_satuan,
-                        'total'       => $detail->total,
+                        'code_barang' => $codeBarang,
+                        'nama'        => $nama,
+                        'qty'         => $bundleQty,
+                        'harga_satuan' => $hargaSatuan,
+                        'total'       => $totalAmount,
                     ]);
                 }
 
