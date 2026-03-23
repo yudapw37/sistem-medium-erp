@@ -227,9 +227,10 @@
                                         <button
                                             @click.stop="suggestActivation(item, index)"
                                             :disabled="bulkToggling || !targetNominal"
-                                            class="h-7 px-3 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            class="inline-flex items-center gap-1.5 h-7 px-3 rounded-lg bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            Terapkan Saran
+                                            <div v-if="bulkToggling" class="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
+                                            {{ bulkToggling ? 'Memproses...' : 'Terapkan Saran' }}
                                         </button>
                                     </div>
 

@@ -247,20 +247,46 @@ class OldOrderController extends Controller
                 ->whereMonth('created_at', $month)
                 ->update(['resume_status' => 0]);
 
-            // 2. Fetch all orders for the month, sorted BY NOMINAL DESCENDING (greedy)
-            $orders = OldOrder::whereYear('created_at', $year)
+            // 2. Identify active days (days that actually have orders)
+            $activeDates = OldOrder::whereYear('created_at', $year)
                 ->whereMonth('created_at', $month)
-                ->select('*', DB::raw('(total_harga + COALESCE(biayaExpedisi, 0) - COALESCE(totalDiskon, 0) - COALESCE(diskonKodeUnik, 0)) as computed_nominal'))
-                ->orderBy('computed_nominal', 'desc')
-                ->get();
+                ->selectRaw('DATE(created_at) as date')
+                ->groupBy('date')
+                ->pluck('date');
 
-            $currentSum = 0;
-            foreach ($orders as $order) {
-                if ($currentSum + $order->computed_nominal <= $targetNominal) {
-                    $order->resume_status = 1;
-                    $order->save();
-                    $currentSum += $order->computed_nominal;
+            if ($activeDates->isEmpty()) {
+                return;
+            }
+
+            $targetPerDay = $targetNominal / $activeDates->count();
+            $idsToActivate = [];
+
+            // 3. Process each day and pick smallest orders first
+            foreach ($activeDates as $date) {
+                $orders = OldOrder::whereDate('created_at', $date)
+                    ->select('*', DB::raw('(total_harga + COALESCE(biayaExpedisi, 0) - COALESCE(totalDiskon, 0) - COALESCE(diskonKodeUnik, 0)) as computed_nominal'))
+                    ->orderBy('computed_nominal', 'asc') // PRIORITAS NOMINAL KECIL
+                    ->get();
+
+                $currentDaySum = 0;
+                foreach ($orders as $order) {
+                    if ($currentDaySum + $order->computed_nominal <= $targetPerDay) {
+                        $idsToActivate[] = $order->id;
+                        $currentDaySum += $order->computed_nominal;
+                    } else {
+                        // Since it's sorted ASC, we might still find a smaller order that fits
+                        // but actually we already picked the smallest ones. 
+                        // If the current smallest doesn't fit, no larger one will.
+                        // But wait, it's ASC, so if current smallest + sum > target, no larger will fit.
+                        // So we can break for this day.
+                        break;
+                    }
                 }
+            }
+
+            // 4. Bulk update the selected orders
+            if (!empty($idsToActivate)) {
+                OldOrder::whereIn('id', $idsToActivate)->update(['resume_status' => 1]);
             }
         });
 
