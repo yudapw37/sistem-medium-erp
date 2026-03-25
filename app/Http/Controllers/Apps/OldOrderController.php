@@ -264,6 +264,11 @@ class OldOrderController extends Controller
             // 3. Process each day and pick smallest orders first
             foreach ($activeDates as $date) {
                 $orders = OldOrder::whereDate('created_at', $date)
+                    ->whereHas('details', function ($q) {
+                        $q->whereIn('code_barang', function ($sub) {
+                            $sub->select('code_barang')->from('old_ms_barang_purchase');
+                        });
+                    })
                     ->select('*', DB::raw('(total_harga + COALESCE(biayaExpedisi, 0) - COALESCE(totalDiskon, 0) - COALESCE(diskonKodeUnik, 0)) as computed_nominal'))
                     ->orderBy('computed_nominal', 'asc') // PRIORITAS NOMINAL KECIL
                     ->get();
