@@ -275,6 +275,9 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
 
     // Stock
     Route::get('/stock-awal', [\App\Http\Controllers\Apps\StockController::class, 'index'])->middleware('permission:transactions-access')->name('stock-awal.index');
+    Route::get('/stock-awal/template', [\App\Http\Controllers\Apps\StockController::class, 'downloadTemplate'])->middleware('permission:transactions-access')->name('stock-awal.template');
+    Route::post('/stock-awal/import', [\App\Http\Controllers\Apps\StockController::class, 'import'])->middleware('permission:transactions-access')->name('stock-awal.import');
+    Route::post('/stock-awal/sync', [\App\Http\Controllers\Apps\StockController::class, 'sync'])->middleware('permission:transactions-access')->name('stock-awal.sync');
     Route::post('/stock-awal', [\App\Http\Controllers\Apps\StockController::class, 'store'])->middleware('permission:transactions-access')->name('stock-awal.store');
     Route::put('/stock-awal/{id}', [\App\Http\Controllers\Apps\StockController::class, 'update'])->middleware('permission:transactions-access')->name('stock-awal.update');
     Route::delete('/stock-awal/{id}', [\App\Http\Controllers\Apps\StockController::class, 'destroy'])->middleware('permission:transactions-access')->name('stock-awal.destroy');

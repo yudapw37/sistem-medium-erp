@@ -9,6 +9,8 @@ use App\Models\OldBarang;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Shuchkin\SimpleXLSX;
+use Shuchkin\SimpleXLSXGen;
 
 class StockController extends Controller
 {
@@ -39,14 +41,9 @@ class StockController extends Controller
                 [
                     'qty' => $request->qty,
                     'tanggal' => $request->tanggal,
+                    'is_synced' => false,
                 ]
             );
-
-            // Update stock running
-            $stockRunning = OldStockRunning::firstOrNew(['code_barang' => $request->code_barang]);
-            $stockRunning->stock_awal = $request->qty;
-            $stockRunning->stock_saldo = $stockRunning->stock_awal + $stockRunning->stock_masuk - $stockRunning->stock_keluar;
-            $stockRunning->save();
         });
 
         return redirect()->back()->with('success', 'Stock awal berhasil disimpan');
@@ -65,15 +62,8 @@ class StockController extends Controller
             $stockAwal->update([
                 'qty' => $request->qty,
                 'tanggal' => $request->tanggal,
+                'is_synced' => false,
             ]);
-
-            // Update stock running
-            $stockRunning = OldStockRunning::where('code_barang', $stockAwal->code_barang)->first();
-            if ($stockRunning) {
-                $stockRunning->stock_awal = $request->qty;
-                $stockRunning->stock_saldo = $stockRunning->stock_awal + $stockRunning->stock_masuk - $stockRunning->stock_keluar;
-                $stockRunning->save();
-            }
         });
 
         return redirect()->back()->with('success', 'Stock awal berhasil diperbarui');
@@ -112,5 +102,109 @@ class StockController extends Controller
         return Inertia::render('Dashboard/Stock/Running', [
             'stockRunning' => $stockRunning
         ]);
+    }
+
+    public function downloadTemplate()
+    {
+        $header = [
+            ['KodeBuku', 'StockScan'],
+            ['ContohKode1', 10],
+            ['ContohKode1', 5],
+            ['ContohKode2', 20],
+        ];
+
+        $xlsx = SimpleXLSXGen::fromArray($header);
+        
+        return response()->streamDownload(function() use ($xlsx) {
+            echo $xlsx;
+        }, 'template_import_stock_awal.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls|max:10240',
+        ]);
+
+        $file = $request->file('file');
+        
+        if ($xlsx = SimpleXLSX::parse($file->getPathname())) {
+            $rows = $xlsx->rows();
+            $header = array_shift($rows);
+            
+            // Map header to indices
+            $kodeBukuIdx = array_search('KodeBuku', $header);
+            $stockScanIdx = array_search('StockScan', $header);
+
+            if ($kodeBukuIdx === false || $stockScanIdx === false) {
+                return redirect()->back()->with('error', 'Format Excel salah. Pastikan kolom KodeBuku dan StockScan ada.');
+            }
+
+            $aggregatedData = [];
+            foreach ($rows as $row) {
+                $code = trim($row[$kodeBukuIdx] ?? '');
+                $qty = (int) ($row[$stockScanIdx] ?? 0);
+
+                if (empty($code)) continue;
+
+                if (!isset($aggregatedData[$code])) {
+                    $aggregatedData[$code] = 0;
+                }
+                $aggregatedData[$code] += $qty;
+            }
+
+            if (empty($aggregatedData)) {
+                return redirect()->back()->with('error', 'Tidak ada data valid untuk diimport.');
+            }
+
+            $tanggal = '2021-12-01';
+
+            DB::transaction(function () use ($aggregatedData, $tanggal) {
+                foreach ($aggregatedData as $code => $qty) {
+                    // Update or Create Stock Awal
+                    OldStockAwal::updateOrCreate(
+                        ['code_barang' => $code],
+                        [
+                            'qty' => $qty,
+                            'tanggal' => $tanggal,
+                            'is_synced' => false,
+                        ]
+                    );
+                }
+            });
+
+            return redirect()->back()->with('success', 'Berhasil mengimport ' . count($aggregatedData) . ' data stock awal.');
+        } else {
+            return redirect()->back()->with('error', SimpleXLSX::parseError());
+        }
+    }
+
+    public function sync()
+    {
+        $unSynced = OldStockAwal::where('is_synced', false)->get();
+
+        if ($unSynced->isEmpty()) {
+            return redirect()->back()->with('error', 'Tidak ada data yang perlu disinkronisasi.');
+        }
+
+        DB::transaction(function () use ($unSynced) {
+            foreach ($unSynced as $item) {
+                // Update stock running
+                $stockRunning = OldStockRunning::firstOrNew(['code_barang' => $item->code_barang]);
+                $stockRunning->stock_awal = $item->qty;
+                $stockRunning->stock_saldo = $stockRunning->stock_awal + $stockRunning->stock_masuk - $stockRunning->stock_keluar;
+                $stockRunning->save();
+
+                // Mark as synced
+                $item->update([
+                    'is_synced' => true,
+                    'synced_at' => now(),
+                ]);
+            }
+        });
+
+        return redirect()->back()->with('success', 'Berhasil menyinkronkan ' . $unSynced->count() . ' data ke Stock Running.');
     }
 }

@@ -15,11 +15,15 @@ class OldStockAwal extends Model
         'code_barang',
         'qty',
         'tanggal',
+        'is_synced',
+        'synced_at',
     ];
 
     protected $casts = [
         'qty' => 'integer',
         'tanggal' => 'date',
+        'is_synced' => 'boolean',
+        'synced_at' => 'datetime',
     ];
 
     public function barang()

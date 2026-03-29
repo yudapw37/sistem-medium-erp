@@ -11,13 +11,30 @@
                         Input stock awal produk berdasarkan data pembelian.
                     </p>
                 </div>
-                <button
-                    @click="showModal = true"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-500 text-white font-semibold hover:bg-primary-600 transition-all"
-                >
-                    <IconPlus :size="18" />
-                    Tambah Stock Awal
-                </button>
+                <div class="flex gap-2">
+                    <button
+                        @click="handleSync"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20"
+                        title="Singkronkan data ke Stock Running"
+                    >
+                        <IconRefresh :size="18" />
+                        Sync Ke Stock Running
+                    </button>
+                    <button
+                        @click="showImportModal = true"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20"
+                    >
+                        <IconUpload :size="18" />
+                        Import Excel
+                    </button>
+                    <button
+                        @click="showModal = true"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-500 text-white font-semibold hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20"
+                    >
+                        <IconPlus :size="18" />
+                        Tambah Stock Awal
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -41,6 +58,7 @@
                             <TableTh>Nama Barang</TableTh>
                             <TableTh class="text-right">Qty</TableTh>
                             <TableTh>Tanggal</TableTh>
+                            <TableTh class="text-center">Status</TableTh>
                             <TableTh class="text-center">Aksi</TableTh>
                         </tr>
                     </TableThead>
@@ -68,6 +86,21 @@
                             </TableTd>
                             <TableTd class="text-slate-600 dark:text-slate-400">
                                 {{ formatDate(item.tanggal) }}
+                            </TableTd>
+                            <TableTd class="text-center">
+                                <span 
+                                    v-if="item.is_synced" 
+                                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                    :title="'Synced at: ' + formatDateTime(item.synced_at)"
+                                >
+                                    Synced
+                                </span>
+                                <span 
+                                    v-else 
+                                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                                >
+                                    Pending
+                                </span>
                             </TableTd>
                             <TableTd class="text-center">
                                 <div class="flex justify-center gap-1">
@@ -150,13 +183,62 @@
                 </div>
             </form>
         </Modal>
+        
+        <!-- Import Modal -->
+        <Modal :show="showImportModal" @close="closeImportModal" title="Import Stock Awal">
+            <form @submit.prevent="submitImport" class="space-y-4">
+                <div class="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <h3 class="font-bold text-slate-900 dark:text-white mb-2">Petunjuk Import:</h3>
+                    <ul class="text-sm text-slate-600 dark:text-slate-400 space-y-1 list-disc ml-4">
+                        <li>Gunakan file Excel (.xlsx atau .xls)</li>
+                        <li>Pastikan terdapat kolom <strong>KodeBuku</strong> dan <strong>StockScan</strong></li>
+                        <li>Jika kode barang sama muncul beberapa kali, jumlahnya akan <strong>otomatis dijumlahkan</strong></li>
+                        <li>Semua data akan di-set ke tanggal <strong>01 Desember 2021</strong></li>
+                    </ul>
+                    <a 
+                        :href="route('stock-awal.template')" 
+                        class="inline-flex items-center gap-1 mt-4 text-sm font-bold text-primary-500 hover:text-primary-600"
+                    >
+                        <IconDownload :size="16" />
+                        Download Template Excel
+                    </a>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        File Excel
+                    </label>
+                    <input
+                        @input="importForm.file = $event.target.files[0]"
+                        type="file"
+                        accept=".xlsx, .xls"
+                        class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-800"
+                        required
+                    />
+                    <div v-if="importForm.errors.file" class="text-red-500 text-xs mt-1">{{ importForm.errors.file }}</div>
+                </div>
+
+                <div class="flex justify-end gap-2 mt-6 pt-4 border-t dark:border-slate-800">
+                    <button type="button" @click="closeImportModal" class="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">
+                        Batal
+                    </button>
+                    <button
+                        type="submit"
+                        :disabled="importForm.processing"
+                        class="px-4 py-2 rounded-lg bg-emerald-500 text-white font-semibold hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {{ importForm.processing ? 'Memproses...' : 'Import Sekarang' }}
+                    </button>
+                </div>
+            </form>
+        </Modal>
     </DashboardLayout>
 </template>
 
 <script setup>
 import { ref, reactive } from 'vue'
 import DashboardLayout from '@/Layouts/DashboardLayout.vue'
-import { router } from '@inertiajs/vue3'
+import { router, useForm, Head } from '@inertiajs/vue3'
 import TableCard from '@/Components/Dashboard/TableCard.vue'
 import Table from '@/Components/Dashboard/Table.vue'
 import TableThead from '@/Components/Dashboard/TableThead.vue'
@@ -168,7 +250,7 @@ import Pagination from '@/Components/Dashboard/Pagination.vue'
 import Search from '@/Components/Dashboard/Search.vue'
 import Modal from '@/Components/Dashboard/Modal.vue'
 import InputSelect from '@/Components/Dashboard/InputSelect.vue'
-import { IconPlus, IconPencil, IconTrash } from '@tabler/icons-vue'
+import { IconPlus, IconPencil, IconTrash, IconUpload, IconDownload, IconRefresh } from '@tabler/icons-vue' // Added IconRefresh
 
 const props = defineProps({
     stockAwal: Object,
@@ -176,6 +258,7 @@ const props = defineProps({
 })
 
 const showModal = ref(false)
+const showImportModal = ref(false)
 const editMode = ref(false)
 const editId = ref(null)
 
@@ -183,6 +266,10 @@ const form = reactive({
     code_barang: '',
     qty: 0,
     tanggal: new Date().toISOString().split('T')[0]
+})
+
+const importForm = useForm({
+    file: null
 })
 
 const resetForm = () => {
@@ -196,6 +283,11 @@ const resetForm = () => {
 const closeModal = () => {
     showModal.value = false
     resetForm()
+}
+
+const closeImportModal = () => {
+    showImportModal.value = false
+    importForm.reset()
 }
 
 const editStock = (item) => {
@@ -219,6 +311,18 @@ const submitForm = () => {
     }
 }
 
+const submitImport = () => {
+    importForm.post(route('stock-awal.import'), {
+        onSuccess: () => closeImportModal(),
+    })
+}
+
+const handleSync = () => {
+    if (confirm('Apakah Anda yakin ingin menyinkronkan semua data yang pending ke Stock Running?')) {
+        router.post(route('stock-awal.sync'))
+    }
+}
+
 const deleteStock = (id) => {
     if (confirm('Apakah Anda yakin ingin menghapus?')) {
         router.delete(route('stock-awal.destroy', id))
@@ -227,5 +331,16 @@ const deleteStock = (id) => {
 
 const formatDate = (date) => {
     return new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+const formatDateTime = (date) => {
+    if (!date) return '-'
+    return new Date(date).toLocaleString('id-ID', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    })
 }
 </script>
