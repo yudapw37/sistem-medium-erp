@@ -16,7 +16,16 @@ class StockController extends Controller
 {
     public function index()
     {
-        $stockAwal = OldStockAwal::with('barang')->latest()->paginate(10);
+        $stockAwal = OldStockAwal::with('barang')
+            ->when(request()->q, function ($query) {
+                $query->where('code_barang', 'like', '%' . request()->q . '%')
+                    ->orWhereHas('barang', function ($q) {
+                        $q->where('judul_buku', 'like', '%' . request()->q . '%');
+                    });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         // Get all barang for selection
         $barangs = OldBarang::orderBy('judul_buku')->get();
@@ -97,7 +106,8 @@ class StockController extends Controller
                     });
             })
             ->orderBy('code_barang')
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Dashboard/Stock/Running', [
             'stockRunning' => $stockRunning

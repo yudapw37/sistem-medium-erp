@@ -110,6 +110,8 @@ class OldOrderAktifController extends Controller
                 })
                 ->get();
 
+            $stockChanges = [];
+
             foreach ($orders as $aktif) {
                 if ($aktif->is_final) {
                     $alreadyFinal++;
@@ -121,17 +123,29 @@ class OldOrderAktifController extends Controller
                     'final_at' => now(),
                 ]);
 
-                // Update stock running (pengurangan)
+                // accumulate stock running (pengurangan)
                 foreach ($aktif->details as $detail) {
                     if (!$detail->code_barang) continue;
 
-                    $stockRunning = OldStockRunning::firstOrNew(['code_barang' => $detail->code_barang]);
-                    $stockRunning->stock_keluar = ($stockRunning->stock_keluar ?? 0) + $detail->jumlah;
-                    $stockRunning->stock_saldo = ($stockRunning->stock_awal ?? 0) + ($stockRunning->stock_masuk ?? 0) - $stockRunning->stock_keluar;
-                    $stockRunning->save();
+                    if (!isset($stockChanges[$detail->code_barang])) {
+                        $stockChanges[$detail->code_barang] = 0;
+                    }
+                    $stockChanges[$detail->code_barang] += $detail->jumlah;
                 }
 
                 $finalized++;
+            }
+
+            // Apply accumulated stock safely to avoid race conditions and 1062 duplicate entry
+            foreach ($stockChanges as $code_barang => $jumlah) {
+                DB::statement("
+                    INSERT INTO old_stock_running (code_barang, stock_awal, stock_masuk, stock_keluar, stock_saldo, created_at, updated_at)
+                    VALUES (?, 0, 0, ?, ?, NOW(), NOW())
+                    ON DUPLICATE KEY UPDATE
+                        stock_keluar = stock_keluar + ?,
+                        stock_saldo = stock_awal + stock_masuk - stock_keluar,
+                        updated_at = NOW()
+                ", [$code_barang, $jumlah, -$jumlah, $jumlah]);
             }
         });
 
@@ -171,22 +185,22 @@ class OldOrderAktifController extends Controller
                 })
                 ->get();
 
+            $stockChanges = [];
+
             foreach ($orders as $aktif) {
                 if (!$aktif->is_final) {
                     $alreadyUnfinal++;
                     continue;
                 }
 
-                // Reverse stock running
+                // accumulate reverse stock running
                 foreach ($aktif->details as $detail) {
                     if (!$detail->code_barang) continue;
 
-                    $stockRunning = OldStockRunning::where('code_barang', $detail->code_barang)->first();
-                    if ($stockRunning) {
-                        $stockRunning->stock_keluar = max(0, ($stockRunning->stock_keluar ?? 0) - $detail->jumlah);
-                        $stockRunning->stock_saldo = ($stockRunning->stock_awal ?? 0) + ($stockRunning->stock_masuk ?? 0) - $stockRunning->stock_keluar;
-                        $stockRunning->save();
+                    if (!isset($stockChanges[$detail->code_barang])) {
+                        $stockChanges[$detail->code_barang] = 0;
                     }
+                    $stockChanges[$detail->code_barang] += $detail->jumlah;
                 }
 
                 // Mark as unfinal
@@ -196,6 +210,18 @@ class OldOrderAktifController extends Controller
                 ]);
 
                 $unfinalized++;
+            }
+
+            // Apply accumulated stock reversal securely
+            foreach ($stockChanges as $code_barang => $jumlah) {
+                DB::statement("
+                    UPDATE old_stock_running 
+                    SET 
+                        stock_keluar = GREATEST(0, stock_keluar - ?),
+                        stock_saldo = stock_awal + stock_masuk - stock_keluar,
+                        updated_at = NOW()
+                    WHERE code_barang = ?
+                ", [$jumlah, $code_barang]);
             }
         });
 

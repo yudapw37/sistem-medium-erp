@@ -124,7 +124,7 @@
                     </TableTbody>
                 </Table>
             </TableCard>
-            <Pagination :data="stockAwal" />
+            <Pagination v-if="stockAwal.links.length > 3" :links="stockAwal.links" />
         </template>
         <template v-else>
             <TableEmpty title="Belum ada data" description="Belum ada stock awal yang diinput." />
