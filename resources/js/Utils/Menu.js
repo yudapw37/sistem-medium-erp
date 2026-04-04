@@ -55,6 +55,7 @@ import {
     IconRuler2,
     IconAdjustments,
     IconHelp,
+    IconArrowsTransferUp,
 } from '@tabler/icons-vue';
 import hasAnyPermission from './Permission';
 
@@ -437,6 +438,13 @@ export default function useMenu() {
                     icon: IconArrowBackUp,
                     permissions: hasAnyPermission(['products-access']),
                 },
+                {
+                    title: 'Mutasi Stok',
+                    href: route('stock-transfers.index'),
+                    active: url.startsWith('/dashboard/stock-transfers'),
+                    icon: IconArrowsTransferUp,
+                    permissions: hasAnyPermission(['products-access']),
+                },
             ],
         },
         {
@@ -652,10 +660,52 @@ export default function useMenu() {
                 },
                 {
                     title: 'Helpdesk',
-                    href: route('helpdesk.index'),
-                    active: url.startsWith('/dashboard/helpdesk'),
                     icon: IconHelp,
                     permissions: true,
+                    subdetails: [
+                        {
+                            title: 'Panduan Old Data',
+                            href: route('helpdesk.index'),
+                            active: url === '/dashboard/helpdesk',
+                            icon: IconHelp,
+                            permissions: true,
+                        },
+                        {
+                            title: 'Alur Penjualan',
+                            href: route('helpdesk.penjualan'),
+                            active: url === '/dashboard/helpdesk/penjualan',
+                            icon: IconShoppingCart,
+                            permissions: true,
+                        },
+                        {
+                            title: 'Alur Pembelian',
+                            href: route('helpdesk.pembelian'),
+                            active: url === '/dashboard/helpdesk/pembelian',
+                            icon: IconShoppingCart,
+                            permissions: true,
+                        },
+                        {
+                            title: 'Stock Opname',
+                            href: route('helpdesk.stock-opname'),
+                            active: url === '/dashboard/helpdesk/stock-opname',
+                            icon: IconClipboardCheck,
+                            permissions: true,
+                        },
+                        {
+                            title: 'Stock Penyesuaian',
+                            href: route('helpdesk.stock-penyesuaian'),
+                            active: url === '/dashboard/helpdesk/stock-penyesuaian',
+                            icon: IconAdjustments,
+                            permissions: true,
+                        },
+                        {
+                            title: 'Zero-Value Trans.',
+                            href: route('helpdesk.zero-value-transaction'),
+                            active: url === '/dashboard/helpdesk/zero-value-transaction',
+                            icon: IconAlertTriangle,
+                            permissions: true,
+                        },
+                    ]
                 },
             ],
         },

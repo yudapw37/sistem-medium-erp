@@ -46,6 +46,23 @@
                     </div>
                 </div>
 
+                <!-- Sale Selection -->
+                <div v-if="selectedCustomer && customerSales.length > 0" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
+                    <h3 class="font-semibold text-slate-900 dark:text-white mb-4">Invoice Terkait (Opsional)</h3>
+                    
+                    <InputSelect
+                        label="Pilih Invoice yang Diretur"
+                        :data="customerSales"
+                        :selected="selectedSale"
+                        :set-selected="handleSelectSale"
+                        placeholder="Tanpa Invoice Khusus..."
+                        :searchable="true"
+                        :errors="form.errors.Sale_id"
+                        displayKey="invoice"
+                    />
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Pilih invoice jika retur ini memotong hutang (Piutang).</p>
+                </div>
+
                 <!-- Warehouse Selection -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
                     <h3 class="font-semibold text-slate-900 dark:text-white mb-4">Gudang Tujuan</h3>
@@ -216,7 +233,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { IconArrowLeft, IconSearch, IconTrash } from '@tabler/icons-vue';
 import axios from 'axios';
@@ -233,6 +250,7 @@ const props = defineProps({
 
 const form = useForm({
     Customer_id: props.saleReturn?.Customer_id || '',
+    Sale_id: props.saleReturn?.Sale_id || '',
     warehouse_id: props.saleReturn?.warehouse_id || '',
     date: props.saleReturn?.date || new Date().toISOString().split('T')[0],
     grand_total: props.saleReturn?.grand_total || 0,
@@ -246,13 +264,45 @@ const form = useForm({
 });
 
 const selectedCustomer = ref(props.saleReturn?.Customer || null);
+const selectedSale = ref(props.saleReturn?.Sale || null);
 const selectedWarehouse = ref(props.saleReturn?.warehouse || null);
 const searchQuery = ref('');
 const searchResults = ref([]);
+const customerSales = ref([]);
+
+const fetchCustomerSales = async (customerId) => {
+    try {
+        const response = await axios.get(route('sale-returns.sales-by-customer', customerId));
+        customerSales.value = response.data;
+        if (selectedSale.value && !customerSales.value.find(s => s.id === selectedSale.value.id)) {
+            customerSales.value.push(selectedSale.value);
+        }
+    } catch (error) {
+        console.error('Error fetching sales:', error);
+    }
+};
+
+onMounted(() => {
+    if (selectedCustomer.value) {
+        fetchCustomerSales(selectedCustomer.value.id);
+    }
+});
 
 const handleSelectCustomer = (value) => {
     selectedCustomer.value = value;
     form.Customer_id = value ? value.id : '';
+    form.Sale_id = '';
+    selectedSale.value = null;
+    customerSales.value = [];
+    
+    if (value) {
+        fetchCustomerSales(value.id);
+    }
+};
+
+const handleSelectSale = (value) => {
+    selectedSale.value = value;
+    form.Sale_id = value ? value.id : '';
 };
 
 const handleSelectWarehouse = (value) => {

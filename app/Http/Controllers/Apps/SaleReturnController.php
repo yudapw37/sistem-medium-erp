@@ -54,6 +54,7 @@ class SaleReturnController extends Controller
     {
         $request->validate([
             'Customer_id' => 'required|exists:Customers,id',
+            'Sale_id' => 'nullable|exists:sales,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'date' => 'required|date',
             'grand_total' => 'required|integer|min:0',
@@ -70,6 +71,7 @@ class SaleReturnController extends Controller
             $return = SaleReturn::create([
                 'code'         => $code,
                 'Customer_id'  => $request->Customer_id,
+                'Sale_id'      => $request->Sale_id,
                 'warehouse_id' => $request->warehouse_id,
                 'user_id'      => auth()->id(),
                 'date'         => $request->date,
@@ -95,7 +97,7 @@ class SaleReturnController extends Controller
      */
     public function show($id)
     {
-        $return = SaleReturn::with(['Customer', 'warehouse', 'details.product', 'user'])->findOrFail($id);
+        $return = SaleReturn::with(['Customer', 'Sale', 'warehouse', 'details.product', 'user'])->findOrFail($id);
 
         return Inertia::render('Dashboard/SaleReturns/Show', [
             'saleReturn' => $return,
@@ -136,6 +138,7 @@ class SaleReturnController extends Controller
 
         $request->validate([
             'Customer_id' => 'required|exists:Customers,id',
+            'Sale_id' => 'nullable|exists:sales,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'date' => 'required|date',
             'grand_total' => 'required|integer|min:0',
@@ -148,6 +151,7 @@ class SaleReturnController extends Controller
         DB::transaction(function () use ($request, $return) {
             $return->update([
                 'Customer_id'  => $request->Customer_id,
+                'Sale_id'      => $request->Sale_id,
                 'warehouse_id' => $request->warehouse_id,
                 'date'         => $request->date,
                 'grand_total'  => $request->grand_total,
@@ -192,7 +196,7 @@ class SaleReturnController extends Controller
      */
     public function finalize($id)
     {
-        $return = SaleReturn::with('details')->findOrFail($id);
+        $return = SaleReturn::with(['details', 'Sale'])->findOrFail($id);
 
         if ($return->status === 'finalized') {
             return redirect()->route('sale-returns.index')->with('error', 'Return already finalized.');
@@ -233,6 +237,24 @@ class SaleReturnController extends Controller
                 'status'       => 'finalized',
                 'finalized_at' => now(),
             ]);
+
+            // Create Journal and reduce Receivable if linked to Credit Sale
+            if ($return->grand_total > 0) {
+                \App\Services\JournalService::createSaleReturnJournal($return);
+
+                if ($return->Sale && $return->Sale->payment_type === 'tempo') {
+                    \App\Models\ReceivablePayment::create([
+                        'reference' => \App\Models\ReceivablePayment::generateReference(),
+                        'sale_id' => $return->Sale_id,
+                        'customer_id' => $return->Customer_id,
+                        'payment_date' => $return->date,
+                        'amount' => $return->grand_total,
+                        'payment_method' => 'other',
+                        'notes' => 'Otomatis: Pemotongan tagihan dari Retur Penjualan ' . $return->code,
+                        'user_id' => auth()->id(),
+                    ]);
+                }
+            }
         });
 
         return redirect()->route('sale-returns.index')->with('success', 'Return finalized and stock increased successfully.');
@@ -249,5 +271,19 @@ class SaleReturnController extends Controller
             ->get();
             
         return response()->json($products);
+    }
+    
+    /**
+     * Get Sales (Invoices) for a specific customer
+     */
+    public function getSalesByCustomer($customerId)
+    {
+        $sales = \App\Models\Sale::where('customer_id', $customerId)
+            ->whereIn('approval_status', ['waiting_stock', 'pending_warehouse', 'completed'])
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get(['id', 'invoice', 'grand_total', 'payment_type']);
+            
+        return response()->json($sales);
     }
 }

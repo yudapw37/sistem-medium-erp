@@ -1,5 +1,5 @@
 <script setup>
-import { Head } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import DashboardLayout from '@/Layouts/DashboardLayout.vue';
 import { 
     IconHelp, 
@@ -11,8 +11,36 @@ import {
     IconChartBar,
     IconDatabase,
     IconCalendarEvent,
-    IconRepeat
+    IconRepeat,
+    IconClipboardList,
+    IconAdjustments,
+    IconZoomMoney,
+    IconExternalLink
 } from '@tabler/icons-vue';
+
+const stockHelpdeskLinks = [
+    {
+        title: 'Stock Opname',
+        desc: 'Alur penghitungan fisik stok, selisih, dan jurnal otomatis.',
+        icon: IconClipboardList,
+        color: 'sky',
+        route: 'helpdesk.stock-opname',
+    },
+    {
+        title: 'Stock Penyesuaian',
+        desc: 'Koreksi stok masuk/keluar beserta jurnal akuntansi double-entry.',
+        icon: IconAdjustments,
+        color: 'violet',
+        route: 'helpdesk.stock-penyesuaian',
+    },
+    {
+        title: 'Zero-Value Transaction',
+        desc: 'Barang rusak, expired, bonus, hibah — tanpa transaksi uang tapi tetap berjurnal.',
+        icon: IconZoomMoney,
+        color: 'teal',
+        route: 'helpdesk.zero-value-transaction',
+    },
+];
 
 const purchaseFlow = [
     { 
@@ -99,6 +127,32 @@ const stockReporting = [
                     <p class="text-slate-500 text-sm">Penjelasan alur data dari import hingga laporan persediaan.</p>
                 </div>
             </div>
+
+            <!-- Shortcut ke Helpdesk Stok -->
+            <section class="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                    <IconPackage class="text-emerald-500" />
+                    Panduan Persediaan & Stock
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <template v-for="(item, idx) in stockHelpdeskLinks" :key="idx">
+                        <Link :href="route(item.route)"
+                            class="flex items-start gap-4 p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50 hover:border-primary-500/40 hover:shadow-md transition-all duration-200 group">
+                            <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                                :class="`bg-${item.color}-500/10 text-${item.color}-500`">
+                                <component :is="item.icon" :size="22" />
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm">{{ item.title }}</h3>
+                                    <IconExternalLink :size="14" class="text-slate-400 group-hover:text-primary-500 transition-colors shrink-0" />
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mt-1">{{ item.desc }}</p>
+                            </div>
+                        </Link>
+                    </template>
+                </div>
+            </section>
 
             <!-- Flow Purchase -->
             <section class="bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden relative">

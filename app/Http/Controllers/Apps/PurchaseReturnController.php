@@ -54,6 +54,7 @@ class PurchaseReturnController extends Controller
     {
         $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
+            'purchase_id' => 'nullable|exists:purchases,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'date' => 'required|date',
             'grand_total' => 'required|integer|min:0',
@@ -70,6 +71,7 @@ class PurchaseReturnController extends Controller
             $return = PurchaseReturn::create([
                 'code'         => $code,
                 'supplier_id'  => $request->supplier_id,
+                'purchase_id'  => $request->purchase_id,
                 'warehouse_id' => $request->warehouse_id,
                 'user_id'      => auth()->id(),
                 'date'         => $request->date,
@@ -136,6 +138,7 @@ class PurchaseReturnController extends Controller
 
         $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
+            'Purchase_id' => 'nullable|exists:purchases,id',
             'warehouse_id' => 'required|exists:warehouses,id',
             'date' => 'required|date',
             'grand_total' => 'required|integer|min:0',
@@ -148,6 +151,7 @@ class PurchaseReturnController extends Controller
         DB::transaction(function () use ($request, $return) {
             $return->update([
                 'supplier_id'  => $request->supplier_id,
+                'Purchase_id'  => $request->Purchase_id,
                 'warehouse_id' => $request->warehouse_id,
                 'date'         => $request->date,
                 'grand_total'  => $request->grand_total,
@@ -192,7 +196,7 @@ class PurchaseReturnController extends Controller
      */
     public function finalize($id)
     {
-        $return = PurchaseReturn::with('details')->findOrFail($id);
+        $return = PurchaseReturn::with(['details', 'Purchase'])->findOrFail($id);
 
         if ($return->status === 'finalized') {
             return redirect()->route('purchase-returns.index')->with('error', 'Return already finalized.');
@@ -233,6 +237,24 @@ class PurchaseReturnController extends Controller
                 'status'       => 'finalized',
                 'finalized_at' => now(),
             ]);
+
+            // Create Journal and reduce Payable if linked to credit purchase
+            if ($return->grand_total > 0) {
+                \App\Services\JournalService::createPurchaseReturnJournal($return);
+
+                if ($return->Purchase && in_array($return->Purchase->payment_type, ['tempo', 'credit'])) {
+                    \App\Models\PayablePayment::create([
+                        'reference'      => \App\Models\PayablePayment::generateReference(),
+                        'purchase_id'    => $return->purchase_id,
+                        'supplier_id'    => $return->supplier_id,
+                        'payment_date'   => $return->date,
+                        'amount'         => $return->grand_total,
+                        'payment_method' => 'other',
+                        'notes'          => 'Otomatis: Pengurangan hutang dari Retur Pembelian ' . $return->code,
+                        'user_id'        => auth()->id(),
+                    ]);
+                }
+            }
         });
 
         return redirect()->route('purchase-returns.index')->with('success', 'Return finalized and stock decreased successfully.');
@@ -249,5 +271,19 @@ class PurchaseReturnController extends Controller
             ->get();
             
         return response()->json($products);
+    }
+
+    /**
+     * Get purchases (PO) for a specific supplier.
+     */
+    public function getPurchasesBySupplier($supplierId)
+    {
+        $purchases = \App\Models\Purchase::where('supplier_id', $supplierId)
+            ->where('status', 'finalized')
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get(['id', 'invoice', 'grand_total', 'payment_type']);
+
+        return response()->json($purchases);
     }
 }

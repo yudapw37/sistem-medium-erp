@@ -127,4 +127,166 @@ class JournalService
             return $journal;
         });
     }
+
+    /**
+     * Create journal entries for a finalized Sale Return
+     */
+    public static function createSaleReturnJournal(\App\Models\SaleReturn $return)
+    {
+        // Get default accounts
+        $salesAccountId = AccountSetting::getAccountId('sales');
+        $cogsAccountId = AccountSetting::getAccountId('cogs');
+        $inventoryAccountId = AccountSetting::getAccountId('inventory');
+        
+        $assetAccountId = null;
+        if ($return->Sale) {
+            $isCashSale = $return->Sale->payment_type !== 'tempo';
+            
+            if ($isCashSale) {
+                $assetAccountId = AccountSetting::getAccountId('sales_cash') ?: AccountSetting::getAccountId('cash');
+            } else {
+                $assetAccountId = AccountSetting::getAccountId('accounts_receivable');
+            }
+        } else {
+            // Default to Cash if no specific invoice linked
+            $assetAccountId = AccountSetting::getAccountId('cash');
+        }
+
+        return DB::transaction(function () use ($return, $salesAccountId, $cogsAccountId, $inventoryAccountId, $assetAccountId) {
+            $journal = Journal::create([
+                'date' => $return->date->toDateString(),
+                'reference' => Journal::generateReference('RTR'),
+                'description' => "Retur Penjualan {$return->code}",
+                'source_type' => \App\Models\SaleReturn::class,
+                'source_id' => $return->id,
+                'user_id' => auth()->id(),
+            ]);
+
+            $entries = [];
+
+            // Entry 1: Debit Sales (Reverse Revenue)
+            if ($salesAccountId) {
+                $entries[] = [
+                    'journal_id' => $journal->id,
+                    'account_id' => $salesAccountId,
+                    'debit' => $return->grand_total,
+                    'credit' => 0,
+                    'description' => 'Retur Pendapatan Penjualan',
+                ];
+            }
+
+            // Entry 2: Credit Cash/Receivable
+            if ($assetAccountId) {
+                $entries[] = [
+                    'journal_id' => $journal->id,
+                    'account_id' => $assetAccountId,
+                    'debit' => 0,
+                    'credit' => $return->grand_total,
+                    'description' => 'Pengurangan Piutang/Kas atas Retur',
+                ];
+            }
+
+            // Entry 3: Debit Inventory
+            $totalCogs = 0;
+            foreach ($return->details as $detail) {
+                if ($detail->product) {
+                    $totalCogs += $detail->product->buy_price * $detail->qty;
+                }
+            }
+
+            if ($totalCogs > 0 && $inventoryAccountId) {
+                $entries[] = [
+                    'journal_id' => $journal->id,
+                    'account_id' => $inventoryAccountId,
+                    'debit' => $totalCogs,
+                    'credit' => 0,
+                    'description' => 'Barang masuk dari retur',
+                ];
+            }
+
+            // Entry 4: Credit COGS
+            if ($totalCogs > 0 && $cogsAccountId) {
+                $entries[] = [
+                    'journal_id' => $journal->id,
+                    'account_id' => $cogsAccountId,
+                    'debit' => 0,
+                    'credit' => $totalCogs,
+                    'description' => 'Pengurangan Harga Pokok Penjualan',
+                ];
+            }
+
+            foreach ($entries as $entry) {
+                JournalEntry::create($entry);
+            }
+
+            $journal->recalculateTotals();
+
+            return $journal;
+        });
+    }
+
+    /**
+     * Create journal entries for a finalized Purchase Return.
+     * Reverses the original purchase journal:
+     * - Dr. Hutang Usaha/Kas  (reverse the credit from original purchase)
+     * - Cr. Inventory         (reverse the debit from original purchase)
+     */
+    public static function createPurchaseReturnJournal(\App\Models\PurchaseReturn $return)
+    {
+        $inventoryAccountId = AccountSetting::getAccountId('inventory');
+        $cashAccountId      = AccountSetting::getAccountId('cash');
+        $apAccountId        = AccountSetting::getAccountId('accounts_payable');
+
+        // Determine which account to reverse based on original purchase type
+        $assetAccountId = null;
+        if ($return->Purchase) {
+            $isCreditPurchase = in_array($return->Purchase->payment_type, ['tempo', 'credit']);
+            $assetAccountId   = $isCreditPurchase ? $apAccountId : $cashAccountId;
+        } else {
+            $assetAccountId = $cashAccountId;
+        }
+
+        return DB::transaction(function () use ($return, $inventoryAccountId, $assetAccountId) {
+            $journal = Journal::create([
+                'date'        => $return->date->toDateString(),
+                'reference'   => Journal::generateReference('RTUR'),
+                'description' => "Retur Pembelian {$return->code}",
+                'source_type' => \App\Models\PurchaseReturn::class,
+                'source_id'   => $return->id,
+                'user_id'     => auth()->id(),
+            ]);
+
+            $entries = [];
+
+            // Dr. Hutang/Kas — reverse the credit from original purchase
+            if ($assetAccountId) {
+                $entries[] = [
+                    'journal_id'  => $journal->id,
+                    'account_id'  => $assetAccountId,
+                    'debit'       => $return->grand_total,
+                    'credit'      => 0,
+                    'description' => 'Pengurangan Hutang/Kas akibat Retur Pembelian',
+                ];
+            }
+
+            // Cr. Inventory — reverse the debit from original purchase
+            if ($inventoryAccountId) {
+                $entries[] = [
+                    'journal_id'  => $journal->id,
+                    'account_id'  => $inventoryAccountId,
+                    'debit'       => 0,
+                    'credit'      => $return->grand_total,
+                    'description' => 'Pengurangan persediaan akibat Retur Pembelian',
+                ];
+            }
+
+            foreach ($entries as $entry) {
+                JournalEntry::create($entry);
+            }
+
+            $journal->recalculateTotals();
+
+            return $journal;
+        });
+    }
 }

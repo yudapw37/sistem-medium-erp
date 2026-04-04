@@ -27,6 +27,7 @@ use App\Http\Controllers\Apps\SaleApprovalController;
 use App\Http\Controllers\Apps\SaleReturnController;
 use App\Http\Controllers\Apps\WarehouseController;
 use App\Http\Controllers\Apps\WarehouseStockController;
+use App\Http\Controllers\Apps\StockTransferController;
 use App\Http\Controllers\Apps\MinimumStockReportController;
 use App\Http\Controllers\Apps\FastMovingReportController;
 use App\Http\Controllers\Apps\SlowMovingReportController;
@@ -92,6 +93,11 @@ Route::get('/run-migrate/{token}', function ($token) {
 Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     Route::get('/', [DashboardController::class, 'index'])->middleware(['auth', 'verified', 'permission:dashboard-access'])->name('dashboard');
     Route::get('/helpdesk', [HelpdeskController::class, 'index'])->middleware(['auth', 'verified'])->name('helpdesk.index');
+    Route::get('/helpdesk/penjualan', [HelpdeskController::class, 'penjualan'])->middleware(['auth', 'verified'])->name('helpdesk.penjualan');
+    Route::get('/helpdesk/pembelian', [HelpdeskController::class, 'pembelian'])->middleware(['auth', 'verified'])->name('helpdesk.pembelian');
+    Route::get('/helpdesk/stock-opname', [HelpdeskController::class, 'stockOpname'])->middleware(['auth', 'verified'])->name('helpdesk.stock-opname');
+    Route::get('/helpdesk/stock-penyesuaian', [HelpdeskController::class, 'stockPenyesuaian'])->middleware(['auth', 'verified'])->name('helpdesk.stock-penyesuaian');
+    Route::get('/helpdesk/zero-value-transaction', [HelpdeskController::class, 'zeroValueTransaction'])->middleware(['auth', 'verified'])->name('helpdesk.zero-value-transaction');
     Route::get('/permissions', [PermissionController::class, 'index'])->middleware('permission:permissions-access')->name('permissions.index');
     // roles route
     Route::resource('/roles', RoleController::class)
@@ -154,8 +160,15 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
         ->middleware(['permission:products-access']);
 
     Route::post('/purchase-returns/searchProduct', [PurchaseReturnController::class, 'searchProduct'])->name('purchase-returns.searchProduct');
+    Route::get('/purchase-returns/purchases-by-supplier/{supplierId}', [PurchaseReturnController::class, 'getPurchasesBySupplier'])->name('purchase-returns.purchases-by-supplier');
     Route::post('/purchase-returns/{id}/finalize', [PurchaseReturnController::class, 'finalize'])->name('purchase-returns.finalize');
     Route::resource('purchase-returns', PurchaseReturnController::class)
+        ->middleware(['permission:products-access']);
+
+    // Mutasi Stok Antar Gudang
+    Route::post('/stock-transfers/searchProduct', [StockTransferController::class, 'searchProduct'])->name('stock-transfers.searchProduct');
+    Route::post('/stock-transfers/{id}/finalize', [StockTransferController::class, 'finalize'])->name('stock-transfers.finalize');
+    Route::resource('stock-transfers', StockTransferController::class)
         ->middleware(['permission:products-access']);
 
     // Stock Adjustment (Penyesuaian Stok)
@@ -185,6 +198,7 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
         ->middleware(['permission:products-access']);
 
     Route::post('/sale-returns/searchProduct', [SaleReturnController::class, 'searchProduct'])->name('sale-returns.searchProduct');
+    Route::get('/sale-returns/sales-by-customer/{customerId}', [SaleReturnController::class, 'getSalesByCustomer'])->name('sale-returns.sales-by-customer');
     Route::post('/sale-returns/{id}/finalize', [SaleReturnController::class, 'finalize'])->name('sale-returns.finalize');
     Route::resource('sale-returns', SaleReturnController::class)
         ->middleware(['permission:transactions-access']);

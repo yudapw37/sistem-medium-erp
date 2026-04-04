@@ -46,6 +46,22 @@
                     </div>
                 </div>
 
+                <!-- PO Selection -->
+                <div v-if="selectedSupplier && supplierPurchases.length > 0" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
+                    <h3 class="font-semibold text-slate-900 dark:text-white mb-4">PO / Invoice Terkait <span class="text-xs font-normal text-slate-400">(Opsional)</span></h3>
+                    <InputSelect
+                        label="Pilih PO yang Diretur"
+                        :data="supplierPurchases"
+                        :selected="selectedPurchase"
+                        :set-selected="handleSelectPurchase"
+                        placeholder="Tanpa PO Khusus..."
+                        :searchable="true"
+                        :errors="form.errors.purchase_id"
+                        displayKey="invoice"
+                    />
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Pilih PO jika retur ini mengurangi hutang ke supplier (pembelian Tempo).</p>
+                </div>
+
                 <!-- Warehouse Selection -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
                     <h3 class="font-semibold text-slate-900 dark:text-white mb-4">Gudang Tujuan</h3>
@@ -216,7 +232,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { IconArrowLeft, IconSearch, IconTrash } from '@tabler/icons-vue';
 import axios from 'axios';
@@ -233,6 +249,7 @@ const props = defineProps({
 
 const form = useForm({
     supplier_id: props.purchaseReturn?.supplier_id || '',
+    purchase_id: props.purchaseReturn?.purchase_id || '',
     warehouse_id: props.purchaseReturn?.warehouse_id || '',
     date: props.purchaseReturn?.date || new Date().toISOString().split('T')[0],
     grand_total: props.purchaseReturn?.grand_total || 0,
@@ -245,14 +262,44 @@ const form = useForm({
     })) || [],
 });
 
-const selectedSupplier = ref(props.purchaseReturn?.supplier || null);
+const selectedSupplier  = ref(props.purchaseReturn?.supplier || null);
+const selectedPurchase  = ref(props.purchaseReturn?.purchase || null);
 const selectedWarehouse = ref(props.purchaseReturn?.warehouse || null);
-const searchQuery = ref('');
-const searchResults = ref([]);
+const searchQuery       = ref('');
+const searchResults     = ref([]);
+const supplierPurchases = ref([]);
+
+const fetchSupplierPurchases = async (supplierId) => {
+    try {
+        const response = await axios.get(route('purchase-returns.purchases-by-supplier', supplierId));
+        supplierPurchases.value = response.data;
+        // Ensure existing PO appears even if not in list
+        if (selectedPurchase.value && !supplierPurchases.value.find(p => p.id === selectedPurchase.value.id)) {
+            supplierPurchases.value.push(selectedPurchase.value);
+        }
+    } catch (error) {
+        console.error('Error fetching purchases:', error);
+    }
+};
+
+onMounted(() => {
+    if (selectedSupplier.value) {
+        fetchSupplierPurchases(selectedSupplier.value.id);
+    }
+});
 
 const handleSelectSupplier = (value) => {
-    selectedSupplier.value = value;
-    form.supplier_id = value ? value.id : '';
+    selectedSupplier.value  = value;
+    form.supplier_id        = value ? value.id : '';
+    form.purchase_id        = '';
+    selectedPurchase.value  = null;
+    supplierPurchases.value = [];
+    if (value) fetchSupplierPurchases(value.id);
+};
+
+const handleSelectPurchase = (value) => {
+    selectedPurchase.value = value;
+    form.purchase_id       = value ? value.id : '';
 };
 
 const handleSelectWarehouse = (value) => {

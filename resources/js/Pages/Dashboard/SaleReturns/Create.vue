@@ -46,6 +46,23 @@
                     </div>
                 </div>
 
+                <!-- Sale Selection -->
+                <div v-if="selectedCustomer && customerSales.length > 0" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
+                    <h3 class="font-semibold text-slate-900 dark:text-white mb-4">Invoice Terkait (Opsional)</h3>
+                    
+                    <InputSelect
+                        label="Pilih Invoice yang Diretur"
+                        :data="customerSales"
+                        :selected="selectedSale"
+                        :set-selected="handleSelectSale"
+                        placeholder="Tanpa Invoice Khusus..."
+                        :searchable="true"
+                        :errors="form.errors.Sale_id"
+                        displayKey="invoice"
+                    />
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Pilih invoice jika retur ini memotong hutang (Piutang).</p>
+                </div>
+
                 <!-- Warehouse Selection -->
                 <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
                     <h3 class="font-semibold text-slate-900 dark:text-white mb-4">Gudang Tujuan</h3>
@@ -232,6 +249,7 @@ const props = defineProps({
 
 const form = useForm({
     Customer_id: '',
+    Sale_id: '',
     warehouse_id: '',
     date: new Date().toISOString().split('T')[0], // Today's date
     grand_total: 0,
@@ -239,13 +257,32 @@ const form = useForm({
 });
 
 const selectedCustomer = ref(null);
+const selectedSale = ref(null);
 const selectedWarehouse = ref(null);
 const searchQuery = ref('');
 const searchResults = ref([]);
+const customerSales = ref([]);
 
-const handleSelectCustomer = (value) => {
+const handleSelectCustomer = async (value) => {
     selectedCustomer.value = value;
     form.Customer_id = value ? value.id : '';
+    form.Sale_id = '';
+    selectedSale.value = null;
+    customerSales.value = [];
+    
+    if (value) {
+        try {
+            const response = await axios.get(route('sale-returns.sales-by-customer', value.id));
+            customerSales.value = response.data;
+        } catch (error) {
+            console.error('Error fetching sales:', error);
+        }
+    }
+};
+
+const handleSelectSale = (value) => {
+    selectedSale.value = value;
+    form.Sale_id = value ? value.id : '';
 };
 
 const handleSelectWarehouse = (value) => {
