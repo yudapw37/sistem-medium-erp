@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
+        // Guard: skip if column already exists (production safe)
+        if (Schema::hasColumn('old_order', 'resume_status')) {
+            return;
+        }
+
         Schema::table('old_order', function (Blueprint $table) {
             $table->boolean('resume_status')->default(true)->after('biayaExpedisi');
         });

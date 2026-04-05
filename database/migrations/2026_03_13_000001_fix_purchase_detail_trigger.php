@@ -7,6 +7,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Guard: skip if table doesn't exist (production safe)
+        if (!\Illuminate\Support\Facades\Schema::hasTable('old_purchase_details')) {
+            return;
+        }
+
         // Drop the problematic trigger
         DB::unprepared("DROP TRIGGER IF EXISTS trg_after_purchase_detail_insert");
 

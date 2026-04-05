@@ -10,6 +10,11 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        // Guard: skip if column already exists (production safe)
+        if (Schema::hasColumn('old_purchase_details', 'code_barang')) {
+            return;
+        }
+
         Schema::table('old_purchase_details', function (Blueprint $table) {
             $table->string('code_barang')->nullable()->after('nama');
         });

@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Guard: skip if columns already exist (production safe)
+        if (Schema::hasColumn('old_stock_awal', 'is_synced')) {
+            return;
+        }
+
         Schema::table('old_stock_awal', function (Blueprint $table) {
             $table->boolean('is_synced')->default(false)->after('tanggal');
             $table->timestamp('synced_at')->nullable()->after('is_synced');
