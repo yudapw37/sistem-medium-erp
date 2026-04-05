@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Guard: skip if table already exists (production safe)
+        if (Schema::hasTable('old_stock_running')) {
+            return;
+        }
+
         Schema::create('old_stock_running', function (Blueprint $table) {
             $table->id();
             $table->string('code_barang');

@@ -10,6 +10,11 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        // Guard: skip if table already exists (production safe)
+        if (Schema::hasTable('old_purchases')) {
+            return;
+        }
+
         Schema::create('old_purchases', function (Blueprint $table) {
             $table->id();
             $table->string('nomor_faktur')->nullable();

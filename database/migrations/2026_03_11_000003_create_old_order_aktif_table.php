@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Guard: skip if table already exists (production safe)
+        if (Schema::hasTable('old_order_aktif')) {
+            return;
+        }
+
         Schema::create('old_order_aktif', function (Blueprint $table) {
             $table->id();
             $table->string('old_order_id')->nullable();

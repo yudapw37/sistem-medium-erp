@@ -10,6 +10,11 @@ return new class extends Migration {
      */
     public function up(): void
     {
+        // Guard: skip if table already exists (production safe)
+        if (Schema::hasTable('old_purchase_details')) {
+            return;
+        }
+
         Schema::create('old_purchase_details', function (Blueprint $table) {
             $table->id();
             $table->foreignId('old_purchase_id')->constrained('old_purchases')->cascadeOnDelete();
