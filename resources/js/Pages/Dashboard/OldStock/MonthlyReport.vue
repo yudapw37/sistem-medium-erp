@@ -83,14 +83,25 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-sm" v-if="filteredReport.length > 0">
                     <thead class="sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/60">
+                        <tr class="border-b border-slate-200 dark:border-slate-700 text-center">
+                            <th rowspan="2" class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase w-8">No</th>
+                            <th rowspan="2" class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Kode Barang</th>
+                            <th rowspan="2" class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Nama Barang</th>
+                            <th rowspan="2" class="text-right py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Harga (Rp)</th>
+                            <th colspan="2" class="py-2 text-xs font-semibold text-slate-500 uppercase bg-blue-50 dark:bg-blue-900/20 text-center border-b border-slate-200 dark:border-slate-700">Stock Awal</th>
+                            <th colspan="2" class="py-2 text-xs font-semibold text-slate-500 uppercase bg-emerald-50 dark:bg-emerald-900/20 text-center border-b border-slate-200 dark:border-slate-700">Masuk</th>
+                            <th colspan="2" class="py-2 text-xs font-semibold text-slate-500 uppercase bg-red-50 dark:bg-red-900/20 text-center border-b border-slate-200 dark:border-slate-700">Keluar</th>
+                            <th colspan="2" class="py-2 text-xs font-semibold text-slate-500 uppercase bg-amber-50 dark:bg-amber-900/20 text-center border-b border-slate-200 dark:border-slate-700">Stock Akhir</th>
+                        </tr>
                         <tr class="border-b border-slate-200 dark:border-slate-700">
-                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase w-8">No</th>
-                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Kode Barang</th>
-                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Nama Barang</th>
-                            <th class="text-right py-3 px-4 text-xs font-semibold text-slate-500 uppercase bg-blue-50 dark:bg-blue-900/20">Stock Awal</th>
-                            <th class="text-right py-3 px-4 text-xs font-semibold text-slate-500 uppercase bg-emerald-50 dark:bg-emerald-900/20">Masuk</th>
-                            <th class="text-right py-3 px-4 text-xs font-semibold text-slate-500 uppercase bg-red-50 dark:bg-red-900/20">Keluar</th>
-                            <th class="text-right py-3 px-4 text-xs font-semibold text-slate-500 uppercase bg-amber-50 dark:bg-amber-900/20">Stock Akhir</th>
+                            <th class="py-2 px-3 text-xs font-semibold text-slate-500 uppercase text-right bg-blue-50 dark:bg-blue-900/20">Qty</th>
+                            <th class="py-2 px-3 text-xs font-semibold text-slate-500 uppercase text-right bg-blue-50 dark:bg-blue-900/20">Nominal</th>
+                            <th class="py-2 px-3 text-xs font-semibold text-slate-500 uppercase text-right bg-emerald-50 dark:bg-emerald-900/20">Qty</th>
+                            <th class="py-2 px-3 text-xs font-semibold text-slate-500 uppercase text-right bg-emerald-50 dark:bg-emerald-900/20">Nominal</th>
+                            <th class="py-2 px-3 text-xs font-semibold text-slate-500 uppercase text-right bg-red-50 dark:bg-red-900/20">Qty</th>
+                            <th class="py-2 px-3 text-xs font-semibold text-slate-500 uppercase text-right bg-red-50 dark:bg-red-900/20">Nominal</th>
+                            <th class="py-2 px-3 text-xs font-semibold text-slate-500 uppercase text-right bg-amber-50 dark:bg-amber-900/20">Qty</th>
+                            <th class="py-2 px-3 text-xs font-semibold text-slate-500 uppercase text-right bg-amber-50 dark:bg-amber-900/20">Nominal</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -109,41 +120,72 @@
                             <td class="py-3 px-4 font-medium text-slate-900 dark:text-white">
                                 {{ item.nama_barang || '-' }}
                             </td>
+                            <td class="py-3 px-4 text-right text-slate-500">
+                                {{ formatNumber(item.hpp) }}
+                            </td>
                             <td class="py-3 px-4 text-right font-bold bg-blue-50/50 dark:bg-blue-900/10"
                                 :class="item.stock_awal === 0 ? 'text-slate-300 dark:text-slate-600' : 'text-blue-700 dark:text-blue-400'">
                                 {{ formatNumber(item.stock_awal) }}
+                            </td>
+                            <td class="py-3 px-4 text-right bg-blue-50/50 dark:bg-blue-900/10 text-xs"
+                                :class="item.nominal_awal === 0 ? 'text-slate-300 dark:text-slate-600' : 'text-slate-600 dark:text-slate-400'">
+                                {{ formatNumber(item.nominal_awal) }}
                             </td>
                             <td class="py-3 px-4 text-right font-bold bg-emerald-50/50 dark:bg-emerald-900/10"
                                 :class="item.stock_masuk === 0 ? 'text-slate-300 dark:text-slate-600' : 'text-emerald-700 dark:text-emerald-400'">
                                 {{ item.stock_masuk > 0 ? '+' : '' }}{{ formatNumber(item.stock_masuk) }}
                             </td>
+                            <td class="py-3 px-4 text-right bg-emerald-50/50 dark:bg-emerald-900/10 text-xs"
+                                :class="item.nominal_masuk === 0 ? 'text-slate-300 dark:text-slate-600' : 'text-slate-600 dark:text-slate-400'">
+                                {{ item.stock_masuk > 0 ? '+' : '' }}{{ formatNumber(item.nominal_masuk) }}
+                            </td>
                             <td class="py-3 px-4 text-right font-bold bg-red-50/50 dark:bg-red-900/10"
                                 :class="item.stock_keluar === 0 ? 'text-slate-300 dark:text-slate-600' : 'text-red-600 dark:text-red-400'">
                                 {{ item.stock_keluar > 0 ? '-' : '' }}{{ formatNumber(item.stock_keluar) }}
                             </td>
+                            <td class="py-3 px-4 text-right bg-red-50/50 dark:bg-red-900/10 text-xs"
+                                :class="item.nominal_keluar === 0 ? 'text-slate-300 dark:text-slate-600' : 'text-slate-600 dark:text-slate-400'">
+                                {{ item.stock_keluar > 0 ? '-' : '' }}{{ formatNumber(item.nominal_keluar) }}
+                            </td>
                             <td class="py-3 px-4 text-right font-bold bg-amber-50/50 dark:bg-amber-900/10"
                                 :class="item.stock_akhir < 0 ? 'text-red-600 dark:text-red-400' : item.stock_akhir === 0 ? 'text-slate-300 dark:text-slate-600' : 'text-amber-700 dark:text-amber-400'">
                                 {{ formatNumber(item.stock_akhir) }}
+                            </td>
+                            <td class="py-3 px-4 text-right bg-amber-50/50 dark:bg-amber-900/10 text-xs"
+                                :class="item.nominal_akhir < 0 ? 'text-red-600 dark:text-red-400' : item.nominal_akhir === 0 ? 'text-slate-300 dark:text-slate-600' : 'text-slate-600 dark:text-slate-400'">
+                                {{ formatNumber(item.nominal_akhir) }}
                             </td>
                         </tr>
                     </tbody>
                     <!-- Totals -->
                     <tfoot class="sticky bottom-0 bg-slate-100 dark:bg-slate-800 border-t-2 border-slate-300 dark:border-slate-600">
                         <tr>
-                            <td colspan="3" class="py-3 px-4 font-bold text-slate-900 dark:text-white text-right uppercase text-xs tracking-wider">
+                            <td colspan="4" class="py-3 px-4 font-bold text-slate-900 dark:text-white text-right uppercase text-xs tracking-wider">
                                 Total
                             </td>
                             <td class="py-3 px-4 text-right font-bold text-blue-700 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-900/20">
                                 {{ formatNumber(totals.stock_awal) }}
                             </td>
+                            <td class="py-3 px-4 text-right font-bold text-blue-800 dark:text-blue-500 bg-blue-100/50 dark:bg-blue-900/20 text-xs">
+                                {{ formatNumber(totals.nominal_awal) }}
+                            </td>
                             <td class="py-3 px-4 text-right font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-900/20">
                                 +{{ formatNumber(totals.stock_masuk) }}
+                            </td>
+                            <td class="py-3 px-4 text-right font-bold text-emerald-800 dark:text-emerald-500 bg-emerald-100/50 dark:bg-emerald-900/20 text-xs">
+                                +{{ formatNumber(totals.nominal_masuk) }}
                             </td>
                             <td class="py-3 px-4 text-right font-bold text-red-600 dark:text-red-400 bg-red-100/50 dark:bg-red-900/20">
                                 -{{ formatNumber(totals.stock_keluar) }}
                             </td>
+                            <td class="py-3 px-4 text-right font-bold text-red-700 dark:text-red-500 bg-red-100/50 dark:bg-red-900/20 text-xs">
+                                -{{ formatNumber(totals.nominal_keluar) }}
+                            </td>
                             <td class="py-3 px-4 text-right font-bold text-amber-700 dark:text-amber-400 bg-amber-100/50 dark:bg-amber-900/20">
                                 {{ formatNumber(totals.stock_akhir) }}
+                            </td>
+                            <td class="py-3 px-4 text-right font-bold text-amber-800 dark:text-amber-500 bg-amber-100/50 dark:bg-amber-900/20 text-xs">
+                                {{ formatNumber(totals.nominal_akhir) }}
                             </td>
                         </tr>
                     </tfoot>

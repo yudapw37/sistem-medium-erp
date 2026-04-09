@@ -47,7 +47,7 @@ class OldStockReportController extends Controller
             ['LAPORAN PERSEDIAAN BULANAN'],
             ['Periode:', $monthNames[$month] . ' ' . $year],
             [''],
-            ['No', 'Kode Barang', 'Nama Barang', 'Stock Awal', 'Masuk', 'Keluar', 'Stock Akhir']
+            ['No', 'Kode Barang', 'Nama Barang', 'Harga/HPP', 'Stock Awal', 'Nominal Awal', 'Masuk', 'Nominal Masuk', 'Keluar', 'Nominal Keluar', 'Stock Akhir', 'Nominal Akhir']
         ];
 
         foreach ($data as $idx => $item) {
@@ -55,20 +55,29 @@ class OldStockReportController extends Controller
                 $idx + 1,
                 $item->code_barang,
                 $item->nama_barang,
+                $item->hpp,
                 $item->stock_awal,
+                $item->nominal_awal,
                 $item->stock_masuk,
+                $item->nominal_masuk,
                 $item->stock_keluar,
-                $item->stock_akhir
+                $item->nominal_keluar,
+                $item->stock_akhir,
+                $item->nominal_akhir
             ];
         }
 
         $exportData[] = [''];
         $exportData[] = [
-            '', '', 'TOTAL',
+            '', '', 'TOTAL', '',
             $totals['stock_awal'],
+            $totals['nominal_awal'],
             $totals['stock_masuk'],
+            $totals['nominal_masuk'],
             $totals['stock_keluar'],
-            $totals['stock_akhir']
+            $totals['nominal_keluar'],
+            $totals['stock_akhir'],
+            $totals['nominal_akhir']
         ];
 
         $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($exportData);
@@ -99,7 +108,12 @@ class OldStockReportController extends Controller
         if ($allCodes->isEmpty()) {
             return [
                 'data' => collect([]),
-                'totals' => ['stock_awal' => 0, 'stock_masuk' => 0, 'stock_keluar' => 0, 'stock_akhir' => 0]
+                'totals' => [
+                    'stock_awal' => 0, 'nominal_awal' => 0,
+                    'stock_masuk' => 0, 'nominal_masuk' => 0,
+                    'stock_keluar' => 0, 'nominal_keluar' => 0,
+                    'stock_akhir' => 0, 'nominal_akhir' => 0
+                ]
             ];
         }
 
@@ -154,10 +168,10 @@ class OldStockReportController extends Controller
             ->whereIn('code_barang', $allCodes)
             ->pluck('qty', 'code_barang');
 
-        // Step 5: Get barang names
+        // Step 5: Get barang names and HPP
         $barangs = DB::table('old_ms_barang')
             ->whereIn('id', $allCodes)
-            ->select('id', 'judul_buku')
+            ->select('id', 'judul_buku', 'hpp')
             ->orderBy('judul_buku')
             ->get();
 
@@ -169,24 +183,35 @@ class OldStockReportController extends Controller
             $mBulanIni   = (float) ($masukBulanIni[$b->id] ?? 0);
             $kBulanIni   = (float) ($keluarBulanIni[$b->id] ?? 0);
 
+            $hpp        = (float) ($b->hpp ?? 0);
+
             $stockAwal  = $awalDasar + $mSebelum - $kSebelum;
             $stockAkhir = $stockAwal + $mBulanIni - $kBulanIni;
 
             return (object) [
                 'code_barang'  => $b->id,
                 'nama_barang'  => $b->judul_buku,
+                'hpp'          => $hpp,
                 'stock_awal'   => $stockAwal,
+                'nominal_awal' => $stockAwal * $hpp,
                 'stock_masuk'  => $mBulanIni,
+                'nominal_masuk'=> $mBulanIni * $hpp,
                 'stock_keluar' => $kBulanIni,
+                'nominal_keluar'=> $kBulanIni * $hpp,
                 'stock_akhir'  => $stockAkhir,
+                'nominal_akhir'=> $stockAkhir * $hpp,
             ];
         });
 
         $totals = [
             'stock_awal'   => $data->sum('stock_awal'),
+            'nominal_awal' => $data->sum('nominal_awal'),
             'stock_masuk'  => $data->sum('stock_masuk'),
+            'nominal_masuk'=> $data->sum('nominal_masuk'),
             'stock_keluar' => $data->sum('stock_keluar'),
+            'nominal_keluar'=> $data->sum('nominal_keluar'),
             'stock_akhir'  => $data->sum('stock_akhir'),
+            'nominal_akhir'=> $data->sum('nominal_akhir'),
         ];
 
         return [
