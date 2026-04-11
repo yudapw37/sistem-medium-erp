@@ -643,9 +643,16 @@ export default function useMenu() {
                             permissions: hasAnyPermission(['transactions-access']),
                         },
                         {
-                            title: 'Lap. Persediaan',
+                            title: 'Lap. Pers. Bulanan',
                             href: route('old-stock-report.monthly'),
-                            active: url.startsWith('/dashboard/old-stock-report'),
+                            active: url.startsWith('/dashboard/old-stock-report/monthly'),
+                            icon: IconChartBarPopular,
+                            permissions: hasAnyPermission(['transactions-access']),
+                        },
+                        {
+                            title: 'Lap. Pers. Tahunan',
+                            href: route('old-stock-report.annual'),
+                            active: url.startsWith('/dashboard/old-stock-report/annual'),
                             icon: IconChartBarPopular,
                             permissions: hasAnyPermission(['transactions-access']),
                         },

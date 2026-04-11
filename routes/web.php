@@ -241,6 +241,8 @@ Route::group(['prefix' => 'dashboard', 'middleware' => ['auth']], function () {
     // Old Stock Reports
     Route::get('/old-stock-report/monthly', [\App\Http\Controllers\Apps\OldStockReportController::class, 'monthlyReport'])->middleware('permission:transactions-access')->name('old-stock-report.monthly');
     Route::get('/old-stock-report/monthly/export', [\App\Http\Controllers\Apps\OldStockReportController::class, 'monthlyReportExport'])->middleware('permission:transactions-access')->name('old-stock-report.monthly.export');
+    Route::get('/old-stock-report/annual', [\App\Http\Controllers\Apps\OldStockReportController::class, 'annualReport'])->middleware('permission:transactions-access')->name('old-stock-report.annual');
+    Route::get('/old-stock-report/annual/export', [\App\Http\Controllers\Apps\OldStockReportController::class, 'annualReportExport'])->middleware('permission:transactions-access')->name('old-stock-report.annual.export');
 
     // Resume & Reports
     Route::get('/old-purchases/resume', [\App\Http\Controllers\Apps\OldPurchaseController::class, 'resume'])

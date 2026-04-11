@@ -219,4 +219,201 @@ class OldStockReportController extends Controller
             'totals' => $totals
         ];
     }
+    public function annualReport(Request $request)
+    {
+        $year = (int) ($request->year ?? date('Y'));
+
+        $reportData = $this->getAnnualReportData($year);
+
+        return Inertia::render('Dashboard/OldStock/AnnualReport', [
+            'report'  => $reportData['data']->values(),
+            'totals'  => $reportData['totals'],
+            'filters' => ['year' => $year],
+        ]);
+    }
+
+    public function annualReportExport(Request $request)
+    {
+        $year = (int) ($request->year ?? date('Y'));
+
+        $reportData = $this->getAnnualReportData($year);
+        $data = $reportData['data'];
+        $totals = $reportData['totals'];
+
+        $exportData = [
+            ['LAPORAN PERSEDIAAN TAHUNAN'],
+            ['Tahun:', $year],
+            [''],
+            ['No', 'Kode Barang', 'Nama Barang', 'Harga/HPP', 'Stock Awal', 'Nominal Awal', 'Masuk', 'Nominal Masuk', 'Keluar', 'Nominal Keluar', 'Stock Akhir', 'Nominal Akhir']
+        ];
+
+        foreach ($data as $idx => $item) {
+            $exportData[] = [
+                $idx + 1,
+                $item->code_barang,
+                $item->nama_barang,
+                $item->hpp,
+                $item->stock_awal,
+                $item->nominal_awal,
+                $item->stock_masuk,
+                $item->nominal_masuk,
+                $item->stock_keluar,
+                $item->nominal_keluar,
+                $item->stock_akhir,
+                $item->nominal_akhir
+            ];
+        }
+
+        $exportData[] = [''];
+        $exportData[] = [
+            '', '', 'TOTAL', '',
+            $totals['stock_awal'],
+            $totals['nominal_awal'],
+            $totals['stock_masuk'],
+            $totals['nominal_masuk'],
+            $totals['stock_keluar'],
+            $totals['nominal_keluar'],
+            $totals['stock_akhir'],
+            $totals['nominal_akhir']
+        ];
+
+        $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($exportData);
+        $filename = "Laporan_Persediaan_Tahunan_{$year}.xlsx";
+
+        return response()->streamDownload(function () use ($xlsx) {
+            $xlsx->download();
+        }, $filename);
+    }
+
+    private function getAnnualReportData(int $year)
+    {
+        $startOfYear = sprintf('%04d-01-01', $year);
+        $endOfYear = sprintf('%04d-12-31', $year);
+
+        // Step 1: Collect ALL code_barang that have any activity
+        $codes1 = DB::table('old_stock_running')->whereNotNull('code_barang')->pluck('code_barang');
+        $codes2 = DB::table('old_stock_awal')->whereNotNull('code_barang')->pluck('code_barang');
+        $codes3 = DB::table('old_purchase_aktif_details')
+            ->whereNotNull('code_barang')->where('code_barang', '!=', '')
+            ->distinct()->pluck('code_barang');
+        $codes4 = DB::table('old_order_aktif_details')
+            ->whereNotNull('code_barang')->where('code_barang', '!=', '')
+            ->distinct()->pluck('code_barang');
+
+        $allCodes = $codes1->merge($codes2)->merge($codes3)->merge($codes4)->unique()->filter()->values();
+
+        if ($allCodes->isEmpty()) {
+            return [
+                'data' => collect([]),
+                'totals' => [
+                    'stock_awal' => 0, 'nominal_awal' => 0,
+                    'stock_masuk' => 0, 'nominal_masuk' => 0,
+                    'stock_keluar' => 0, 'nominal_keluar' => 0,
+                    'stock_akhir' => 0, 'nominal_akhir' => 0
+                ]
+            ];
+        }
+
+        // Step 2: Pre-aggregate stock masuk (purchase aktif, by pa.tanggal_faktur)
+        $masukSebelum = DB::table('old_purchase_aktif_details as pad')
+            ->join('old_purchase_aktif as pa', 'pad.old_purchase_aktif_id', '=', 'pa.id')
+            ->where('pa.is_final', 1)
+            ->whereNotNull('pad.code_barang')
+            ->where('pad.code_barang', '!=', '')
+            ->whereDate('pa.tanggal_faktur', '<', $startOfYear)
+            ->select('pad.code_barang', DB::raw('SUM(pad.qty) as total'))
+            ->groupBy('pad.code_barang')
+            ->pluck('total', 'code_barang');
+
+        $masukTahunIni = DB::table('old_purchase_aktif_details as pad')
+            ->join('old_purchase_aktif as pa', 'pad.old_purchase_aktif_id', '=', 'pa.id')
+            ->where('pa.is_final', 1)
+            ->whereNotNull('pad.code_barang')
+            ->where('pad.code_barang', '!=', '')
+            ->whereDate('pa.tanggal_faktur', '>=', $startOfYear)
+            ->whereDate('pa.tanggal_faktur', '<=', $endOfYear)
+            ->select('pad.code_barang', DB::raw('SUM(pad.qty) as total'))
+            ->groupBy('pad.code_barang')
+            ->pluck('total', 'code_barang');
+
+        // Step 3: Pre-aggregate stock keluar (order aktif, by old_order.created_at)
+        $keluarSebelum = DB::table('old_order_aktif_details as oad')
+            ->join('old_order_aktif as oa', 'oad.old_order_aktif_id', '=', 'oa.id')
+            ->join('old_order as o', 'oa.old_order_id', '=', 'o.id')
+            ->where('oa.is_final', 1)
+            ->whereNotNull('oad.code_barang')
+            ->where('oad.code_barang', '!=', '')
+            ->whereDate('o.created_at', '<', $startOfYear)
+            ->select('oad.code_barang', DB::raw('SUM(oad.jumlah) as total'))
+            ->groupBy('oad.code_barang')
+            ->pluck('total', 'code_barang');
+
+        $keluarTahunIni = DB::table('old_order_aktif_details as oad')
+            ->join('old_order_aktif as oa', 'oad.old_order_aktif_id', '=', 'oa.id')
+            ->join('old_order as o', 'oa.old_order_id', '=', 'o.id')
+            ->where('oa.is_final', 1)
+            ->whereNotNull('oad.code_barang')
+            ->where('oad.code_barang', '!=', '')
+            ->whereDate('o.created_at', '>=', $startOfYear)
+            ->whereDate('o.created_at', '<=', $endOfYear)
+            ->select('oad.code_barang', DB::raw('SUM(oad.jumlah) as total'))
+            ->groupBy('oad.code_barang')
+            ->pluck('total', 'code_barang');
+
+        // Step 4: Get stock awal dasar
+        $stockAwalDasar = DB::table('old_stock_awal')
+            ->whereIn('code_barang', $allCodes)
+            ->pluck('qty', 'code_barang');
+
+        // Step 5: Get barang names and HPP
+        $barangs = DB::table('old_ms_barang')
+            ->whereIn('id', $allCodes)
+            ->select('id', 'judul_buku', 'hpp')
+            ->orderBy('judul_buku')
+            ->get();
+
+        // Step 6: Assemble report in PHP
+        $data = $barangs->map(function ($b) use ($stockAwalDasar, $masukSebelum, $masukTahunIni, $keluarSebelum, $keluarTahunIni) {
+            $awalDasar   = (float) ($stockAwalDasar[$b->id] ?? 0);
+            $mSebelum    = (float) ($masukSebelum[$b->id] ?? 0);
+            $kSebelum    = (float) ($keluarSebelum[$b->id] ?? 0);
+            $mTahunIni   = (float) ($masukTahunIni[$b->id] ?? 0);
+            $kTahunIni   = (float) ($keluarTahunIni[$b->id] ?? 0);
+
+            $hpp        = (float) ($b->hpp ?? 0);
+
+            $stockAwal  = $awalDasar + $mSebelum - $kSebelum;
+            $stockAkhir = $stockAwal + $mTahunIni - $kTahunIni;
+
+            return (object) [
+                'code_barang'  => $b->id,
+                'nama_barang'  => $b->judul_buku,
+                'hpp'          => $hpp,
+                'stock_awal'   => $stockAwal,
+                'nominal_awal' => $stockAwal * $hpp,
+                'stock_masuk'  => $mTahunIni,
+                'nominal_masuk'=> $mTahunIni * $hpp,
+                'stock_keluar' => $kTahunIni,
+                'nominal_keluar'=> $kTahunIni * $hpp,
+                'stock_akhir'  => $stockAkhir,
+                'nominal_akhir'=> $stockAkhir * $hpp,
+            ];
+        });
+
+        $totals = [
+            'stock_awal'   => $data->sum('stock_awal'),
+            'nominal_awal' => $data->sum('nominal_awal'),
+            'stock_masuk'  => $data->sum('stock_masuk'),
+            'nominal_masuk'=> $data->sum('nominal_masuk'),
+            'stock_keluar' => $data->sum('stock_keluar'),
+            'nominal_keluar'=> $data->sum('nominal_keluar'),
+            'stock_akhir'  => $data->sum('stock_akhir'),
+            'nominal_akhir'=> $data->sum('nominal_akhir'),
+        ];
+
+        return [
+            'data'   => $data,
+            'totals' => $totals
+        ];
+    }
 }
